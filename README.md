@@ -11,7 +11,7 @@ This is also loosely based on a [similar library](https://qb64phoenix.com/forum/
 
 - Easy plug-&-play API optimized for demos & games
 - Works with the 64-bit QB64 complier (unlike RhoSigma's library that is 32-bit only)
-- Lixmp is statically linked to the complied executable (no DLL dependency)
+- Libxmp is statically linked to the complied executable (no DLL dependency)
 - Demo player that shows how to use the library
 
 ## API
