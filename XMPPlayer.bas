@@ -85,7 +85,7 @@ Sub PlaySong (fileName As String)
 
     XMPStartPlayer
 
-    Dim k As Long
+    Dim k As Long, loopCounter As Unsigned Long
 
     XMPSetVolume Volume
 
@@ -112,11 +112,13 @@ Sub PlaySong (fileName As String)
                 XMPPlayer.isLooping = Not XMPPlayer.isLooping
         End Select
 
-        DrawInfoScreen
+        If loopCounter Mod 2 = 0 Then DrawInfoScreen ' Draw every alternate frame
 
         Display
 
         Limit 120
+
+        loopCounter = loopCounter + 1
     Loop Until Not XMPPlayer.isPlaying Or k = 27 Or TotalDroppedFiles > 0
 
     XMPStopPlayer
@@ -128,7 +130,6 @@ End Sub
 ' Draws the screen during playback
 ' This part is mostly from RhoSigma's player code
 Sub DrawInfoScreen
-    Static loopCounter As Unsigned Long
     Dim As Integer ow, oh, c, x, y, xp, yp
     Dim As Long ns, i, lSamp, rSamp
     Dim As String minute, second
@@ -154,43 +155,39 @@ Sub DrawInfoScreen
     Locate 25, 7: Print "-|_ - DECREASE VOLUME"
     Locate 26, 7: Print "L|l - LOOP"
 
-    If loopCounter Mod 3 = 0 Then ' Display every third iteration
-        '--- animate wave form oscillators ---
-        'As the oscillators width is probably <> number of samples, we need to
-        'scale the x-position, same is with the amplitude (y-position).
-        ow = 597: oh = 46 'oscillator width/height
+    '--- animate wave form oscillators ---
+    'As the oscillators width is probably <> number of samples, we need to
+    'scale the x-position, same is with the amplitude (y-position).
+    ow = 597: oh = 46 'oscillator width/height
 
-        Line (20, 32)-(620, 144), 0, BF
-        Color 7: DrawStringCenter "Left Channel", 32
-        Color 2: PrintString (20, 32), "0 [ms]"
-        Color 2: PrintString (532, 32), Left$(Str$(ns / SndRate * 1000), 6) + " [ms]"
-        c = 7: x = 22: y = 96 'framecolor/origin
-        For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES Step XMP_SOUND_BUFFER_SAMPLE_SIZE
-            lSamp = MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i, Integer)
-            xp = (ow / ns * (i / 4)) + x
-            yp = (lSamp / 32768 * oh)
-            If Abs(yp) > oh Then yp = oh * Sgn(yp) + y: c = 12 Else yp = yp + y
-            If i = 0 Then PSet (xp, yp), 10: Else Line -(xp, yp), 10
-        Next
-        Line (20, 48)-(620, 144), c, B
+    Line (20, 32)-(620, 144), 0, BF
+    Color 7: DrawStringCenter "Left Channel", 32
+    Color 2: PrintString (20, 32), "0 [ms]"
+    Color 2: PrintString (532, 32), Left$(Str$(ns / SndRate * 1000), 6) + " [ms]"
+    c = 7: x = 22: y = 96 'framecolor/origin
+    For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES Step XMP_SOUND_BUFFER_SAMPLE_SIZE
+        lSamp = MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i, Integer)
+        xp = (ow / ns * (i / 4)) + x
+        yp = (lSamp / 32768 * oh)
+        If Abs(yp) > oh Then yp = oh * Sgn(yp) + y: c = 12 Else yp = yp + y
+        If i = 0 Then PSet (xp, yp), 10: Else Line -(xp, yp), 10
+    Next
+    Line (20, 48)-(620, 144), c, B
 
-        '-----
-        Line (20, 160)-(620, 272), 0, BF
-        Color 7: DrawStringCenter "Right Channel", 160
-        Color 2: PrintString (20, 160), "0 [ms]"
-        Color 2: PrintString (532, 160), Left$(Str$(ns / SndRate * 1000), 6) + " [ms]"
-        c = 7: x = 22: y = 224 'framecolor/origin
-        For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES Step XMP_SOUND_BUFFER_SAMPLE_SIZE
-            rSamp = MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i + 2, Integer)
-            xp = (ow / ns * (i / 4)) + x
-            yp = (rSamp / 32768 * oh)
-            If Abs(yp) > oh Then yp = oh * Sgn(yp) + y: c = 12 Else yp = yp + y
-            If i = 0 Then PSet (xp, yp), 10: Else Line -(xp, yp), 10
-        Next
-        Line (20, 176)-(620, 272), c, B
-    End If
-
-    loopCounter = loopCounter + 1
+    '-----
+    Line (20, 160)-(620, 272), 0, BF
+    Color 7: DrawStringCenter "Right Channel", 160
+    Color 2: PrintString (20, 160), "0 [ms]"
+    Color 2: PrintString (532, 160), Left$(Str$(ns / SndRate * 1000), 6) + " [ms]"
+    c = 7: x = 22: y = 224 'framecolor/origin
+    For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES Step XMP_SOUND_BUFFER_SAMPLE_SIZE
+        rSamp = MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i + 2, Integer)
+        xp = (ow / ns * (i / 4)) + x
+        yp = (rSamp / 32768 * oh)
+        If Abs(yp) > oh Then yp = oh * Sgn(yp) + y: c = 12 Else yp = yp + y
+        If i = 0 Then PSet (xp, yp), 10: Else Line -(xp, yp), 10
+    Next
+    Line (20, 176)-(620, 272), c, B
 End Sub
 
 
