@@ -1,6 +1,8 @@
 '---------------------------------------------------------------------------------------------------------
 ' LibXMP Lite
 ' Copyright (c) 2022 Samuel Gomes
+'
+' Most of the stuff here is from https://github.com/libxmp/libxmp/blob/master/include/xmp.h
 '---------------------------------------------------------------------------------------------------------
 
 '---------------------------------------------------------------------------------------------------------
@@ -14,7 +16,15 @@ $If LIBXMPLITE_BI = UNDEFINED Then
     '-----------------------------------------------------------------------------------------------------
     ' CONSTANTS
     '-----------------------------------------------------------------------------------------------------
+    Const XMP_NAME_SIZE = 64 ' Size of module name and type
+
     Const XMP_PLAYER_VOLUME = 7 ' Player module volume
+
+    Const XMP_MAX_CHANNELS = 64 ' Max number of channels in module
+
+    ' Helper constants. These must be in sync with the types below
+    Const XMP_CHANNEL_INFO_SIZE = 24 ' size of xmp_channel_info type
+    Const XMP_CHANNEL_INFO_ARRAY_SIZE = XMP_CHANNEL_INFO_SIZE * XMP_MAX_CHANNELS
 
     Const XMP_SOUND_BUFFER_CHANNELS = 2 ' 2 channel (stereo)
     Const XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES = 2 ' 2 bytes (16-bits signed integer)
@@ -26,6 +36,36 @@ $If LIBXMPLITE_BI = UNDEFINED Then
     '-----------------------------------------------------------------------------------------------------
     ' USER DEFINED TYPES
     '-----------------------------------------------------------------------------------------------------
+    ' Info type used with xmp_test_module()
+    Type xmp_test_info
+        mod_name As String * Xmp_name_size ' Module title
+        mod_type As String * Xmp_name_size ' Module format
+    End Type
+
+    Type xmp_event
+        note As Unsigned Byte ' Note number (0 means no note)
+        ins As Unsigned Byte ' Patch number
+        vol As Unsigned Byte ' Volume (0 to basevol)
+        fxt As Unsigned Byte ' Effect type
+        fxp As Unsigned Byte ' Effect parameter
+        f2t As Unsigned Byte ' Secondary effect type
+        f2p As Unsigned Byte ' Secondary effect parameter
+        flag As Unsigned Byte ' Internal (reserved) flags
+    End Type
+
+    Type xmp_channel_info
+        period As Unsigned Long ' Sample period (* 4096)
+        position As Unsigned Long ' Sample position
+        pitchbend As Integer ' Linear bend from base note
+        note As Unsigned Byte ' Current base note number
+        instrument As Unsigned Byte ' Current instrument number
+        sample As Unsigned Byte ' Current sample number
+        volume As Unsigned Byte ' Current volume
+        pan As Unsigned Byte ' Current stereo pan
+        reserved As Unsigned Byte ' Reserved
+        event As xmp_event ' Current track event
+    End Type
+
     ' Info type used with xmp_get_frame_info()
     Type xmp_frame_info
         position As Long ' Current position
@@ -46,7 +86,7 @@ $If LIBXMPLITE_BI = UNDEFINED Then
         virt_channels As Long ' Number of virtual channels
         virt_used As Long ' Used virtual channels
         sequence As Long ' Current sequence
-        channel_info As String * 1536 ' Current channel info (embedded struct xmp_channel_info array)
+        channel_info As String * Xmp_channel_info_array_size ' Current channel information
     End Type
 
     ' QB64 specific stuff
@@ -55,7 +95,8 @@ $If LIBXMPLITE_BI = UNDEFINED Then
         isPlaying As Byte ' Set to true if tune is playing
         isPaused As Byte ' Set to true if tune is paused
         isLooping As Byte ' Set to true if tune is looping
-        frame As xmp_frame_info ' Current frame info. This is used to check if we are looping or playback is done
+        frameInfo As xmp_frame_info ' Current frame info. This is used to check if we are looping or playback is done
+        testInfo As xmp_test_info   ' This will have the MOD name and type
         errorCode As Long ' This hold the error code from a previous XMP function
         soundBuffer As MEM ' This is the buffer that holds the rendered samples from libxmp
         soundBufferSize As Unsigned Long ' Size of the render buffer
@@ -69,6 +110,7 @@ $If LIBXMPLITE_BI = UNDEFINED Then
     Declare Static Library "./libxmp"
         Function xmp_create_context%&
         Sub xmp_free_context (ByVal context As Offset)
+        Function xmp_test_module& (path As String, test_info As xmp_test_info)
         Function xmp_load_module& (ByVal context As Offset, path As String)
         Sub xmp_release_module (ByVal context As Offset)
         Function xmp_start_player& (ByVal context As Offset, Byval rate As Long, Byval format As Long)

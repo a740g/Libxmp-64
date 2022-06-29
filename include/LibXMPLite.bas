@@ -42,6 +42,10 @@ $If LIBXMPLITE_BAS = UNDEFINED Then
         ' If a song is already loaded then unload and free resources
         If XMPPlayer.context <> NULL Then XMPStopPlayer
 
+        ' Check if the file is a valid module music
+        XMPPlayer.errorCode = xmp_test_module(sFileName + Chr$(NULL), XMPPlayer.testInfo)
+        If XMPPlayer.errorCode <> 0 Then Exit Function
+
         ' Initialize the player
         XMPPlayer.context = xmp_create_context
 
@@ -129,13 +133,13 @@ $If LIBXMPLITE_BAS = UNDEFINED Then
         XMPPlayer.errorCode = xmp_play_buffer(XMPPlayer.context, XMPPlayer.soundBuffer.OFFSET, XMPPlayer.soundBufferSize, 0)
 
         ' Get the frame information
-        xmp_get_frame_info XMPPlayer.context, XMPPlayer.frame
+        xmp_get_frame_info XMPPlayer.context, XMPPlayer.frameInfo
 
         ' Set playing flag to false if we are not looping and loop count > 0
         If XMPPlayer.isLooping Then
             XMPPlayer.isPlaying = TRUE
         Else
-            XMPPlayer.isPlaying = (XMPPlayer.frame.loop_count < 1)
+            XMPPlayer.isPlaying = (XMPPlayer.frameInfo.loop_count < 1)
             ' Exit before any samples are queued
             If Not XMPPlayer.isPlaying Then Exit Sub
         End If
