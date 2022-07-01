@@ -96,7 +96,7 @@ $If LIBXMPLITE_BI = UNDEFINED Then
         isPaused As Byte ' Set to true if tune is paused
         isLooping As Byte ' Set to true if tune is looping
         frameInfo As xmp_frame_info ' Current frame info. This is used to check if we are looping or playback is done
-        testInfo As xmp_test_info   ' This will have the MOD name and type
+        testInfo As xmp_test_info ' This will have the MOD name and type
         errorCode As Long ' This hold the error code from a previous XMP function
         soundBuffer As MEM ' This is the buffer that holds the rendered samples from libxmp
         soundBufferSize As Unsigned Long ' Size of the render buffer
