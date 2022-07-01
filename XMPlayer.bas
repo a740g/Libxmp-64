@@ -12,7 +12,7 @@
 '-----------------------------------------------------------------------------------------------------
 ' METACOMMANDS
 '-----------------------------------------------------------------------------------------------------
-$ExeIcon:'./XMPPlayer.ico'
+$ExeIcon:'./XMPlayer.ico'
 $VersionInfo:CompanyName='Samuel Gomes'
 $VersionInfo:FileDescription='XMP Player executable'
 $VersionInfo:InternalName='XMP Player'
@@ -29,7 +29,7 @@ $VersionInfo:PRODUCTVERSION#=1,0,0,0
 '-----------------------------------------------------------------------------------------------------
 ' CONSTANTS
 '-----------------------------------------------------------------------------------------------------
-Const APP_NAME = "XMP Player"
+Const APP_NAME = "XMPlayer"
 '-----------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ Dim Shared Volume As Integer
 '-----------------------------------------------------------------------------------------------------
 ' PROGRAM ENTRY POINT
 '-----------------------------------------------------------------------------------------------------
-Title APP_NAME ' Set the program name in the titlebar
+Title APP_NAME + " " + OS$ ' Set the program name in the titlebar
 ChDir StartDir$ ' Change to the directory specifed by the environment
 AcceptFileDrop ' Enable drag and drop of files
 Screen 12 ' Use 640x480 resolution
@@ -123,7 +123,7 @@ Sub PlaySong (fileName As String)
 
     XMPStopPlayer
 
-    Title APP_NAME ' Set app title to the way it was
+    Title APP_NAME + " " + OS$ ' Set app title to the way it was
 End Sub
 
 
