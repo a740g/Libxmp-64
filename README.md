@@ -24,3 +24,12 @@ Sub XMPStopPlayer
 Function XMPGetVolume%
 Sub XMPSetVolume (nVolume As Integer)
 ```
+
+## Important note
+
+Due to a bug in all versions of QB64 and QBPE, it fails to link static libraries on Windows. There is a workaround (fix?). However, as of QBPE version v0.8.2, it has not made it's way to the [binary release](https://github.com/QB64-Phoenix-Edition/QB64pe/releases).
+
+See [issue # 122](https://github.com/QB64-Phoenix-Edition/QB64pe/issues/112).
+Also see this [Discord thread](https://discord.com/channels/975381912350752819/975383819848912926/985214420487655454).
+
+I have made the changes myself and shared the updated QBPE v0.8.2 Windows executable in a [QBPE forum thread](https://qb64phoenix.com/forum/showthread.php?tid=557&pid=3631#pid3631). You can download the executable from here and replace your `qb64.exe` with this one.
