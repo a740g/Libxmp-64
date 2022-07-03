@@ -147,7 +147,7 @@ $If LIBXMPLITE_BAS = UNDEFINED Then
         ' Push the samples to the sound pipe
         Dim i As Unsigned Long
         For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES Step XMP_SOUND_BUFFER_SAMPLE_SIZE
-            SndRaw MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i, Integer) / 32768!, MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_CHANNELS, Integer) / 32768!, XMPPlayer.soundHandle
+            SndRaw MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i, Integer) / 32768!, MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES, Integer) / 32768!, XMPPlayer.soundHandle
         Next
     End Sub
 

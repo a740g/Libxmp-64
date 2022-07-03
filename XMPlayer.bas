@@ -47,7 +47,7 @@ AcceptFileDrop ' Enable drag and drop of files
 Screen 12 ' Use 640x480 resolution
 AllowFullScreen SquarePixels , Smooth ' All the user to press Alt+Enter to go fullscreen
 Display ' Only swap buffer when we want
-Volume = 100 ' Set initial volume as 100%
+Volume = XMP_VOLUME_MAX ' Set initial volume as 100%
 
 ProcessCommandLine ' Check if any files were specified in the command line
 
@@ -74,6 +74,7 @@ Sub PlaySong (fileName As String)
     If Not XMPLoadFile(fileName) Then
         Color 12
         Print: Print "Failed to load "; fileName; "!"
+        Display
         Sleep 5
         Exit Sub
     End If
@@ -134,13 +135,13 @@ Sub DrawInfoScreen
     Dim As Long ns, i, lSamp, rSamp
     Dim As String minute, second
 
-    ns = XMPPlayer.soundBufferSize / 4 'number of samples in the buffer
+    ns = XMPPlayer.soundBufferSize / XMP_SOUND_BUFFER_SAMPLE_SIZE 'number of samples in the buffer
 
     If XMPPlayer.isPaused Or Not XMPPlayer.isPlaying Then Color 12 Else Color 7
 
     Locate 22, 43: Print Using "Buffered sound: #.##### seconds"; SndRawLen(XMPPlayer.soundHandle)
     Locate 23, 43: Print "Position / Row:"; XMPPlayer.frameInfo.position; "/"; XMPPlayer.frameInfo.row; "  "
-    Locate 24, 43: Print Using "Current volume: ###"; Volume
+    Locate 24, 43: Print "Current volume:"; Volume
     minute = Right$("00" + LTrim$(Str$((XMPPlayer.frameInfo.time + 500) \ 60000)), 2)
     second = Right$("00" + LTrim$(Str$(((XMPPlayer.frameInfo.time + 500) \ 1000) Mod 60)), 2)
     Locate 25, 43: Print Using "  Elapsed time: &:& (mm:ss)"; minute; second
@@ -167,7 +168,7 @@ Sub DrawInfoScreen
     c = 7: x = 22: y = 96 'framecolor/origin
     For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES Step XMP_SOUND_BUFFER_SAMPLE_SIZE
         lSamp = MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i, Integer)
-        xp = (ow / ns * (i / 4)) + x
+        xp = (ow / ns * (i / XMP_SOUND_BUFFER_SAMPLE_SIZE)) + x
         yp = (lSamp / 32768 * oh)
         If Abs(yp) > oh Then yp = oh * Sgn(yp) + y: c = 12 Else yp = yp + y
         If i = 0 Then PSet (xp, yp), 10: Else Line -(xp, yp), 10
@@ -181,8 +182,8 @@ Sub DrawInfoScreen
     Color 2: PrintString (532, 160), Left$(Str$(ns / SndRate * 1000), 6) + " [ms]"
     c = 7: x = 22: y = 224 'framecolor/origin
     For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES Step XMP_SOUND_BUFFER_SAMPLE_SIZE
-        rSamp = MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i + 2, Integer)
-        xp = (ow / ns * (i / 4)) + x
+        rSamp = MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES, Integer)
+        xp = (ow / ns * (i / XMP_SOUND_BUFFER_SAMPLE_SIZE)) + x
         yp = (rSamp / 32768 * oh)
         If Abs(yp) > oh Then yp = oh * Sgn(yp) + y: c = 12 Else yp = yp + y
         If i = 0 Then PSet (xp, yp), 10: Else Line -(xp, yp), 10

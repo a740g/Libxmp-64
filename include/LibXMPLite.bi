@@ -28,9 +28,11 @@ $If LIBXMPLITE_BI = UNDEFINED Then
 
     Const XMP_SOUND_BUFFER_CHANNELS = 2 ' 2 channel (stereo)
     Const XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES = 2 ' 2 bytes (16-bits signed integer)
-    Const XMP_SOUND_BUFFER_SAMPLE_SIZE = XMP_SOUND_BUFFER_CHANNELS + XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES
+    Const XMP_SOUND_BUFFER_SAMPLE_SIZE = XMP_SOUND_BUFFER_CHANNELS * XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES
     Const XMP_SOUND_BUFFER_SIZE_MULTIPLIER = 0.02322 ' This is what we will multiply the buffer size with to get the final size
     Const XMP_SOUND_TIME_MIN = 0.2 ' We will check that we have this amount of time left in the QB64 sound pipe
+
+    Const XMP_VOLUME_MAX = 100 ' Max volume in percentage
     '-----------------------------------------------------------------------------------------------------
 
     '-----------------------------------------------------------------------------------------------------
