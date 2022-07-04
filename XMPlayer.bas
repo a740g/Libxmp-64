@@ -14,15 +14,15 @@
 '-----------------------------------------------------------------------------------------------------
 $ExeIcon:'./XMPlayer.ico'
 $VersionInfo:CompanyName='Samuel Gomes'
-$VersionInfo:FileDescription='XMP Player executable'
-$VersionInfo:InternalName='XMP Player'
+$VersionInfo:FileDescription='XMPlayer executable'
+$VersionInfo:InternalName='XMPlayer'
 $VersionInfo:LegalCopyright='Copyright (c) 2022, Samuel Gomes'
 $VersionInfo:LegalTrademarks='All trademarks are property of their respective owners'
-$VersionInfo:OriginalFilename='XMPPlayer.exe'
-$VersionInfo:ProductName='XMP Player'
+$VersionInfo:OriginalFilename='XMPlayer.exe'
+$VersionInfo:ProductName='XMPlayer'
 $VersionInfo:Web='https://github.com/a740g'
 $VersionInfo:Comments='https://github.com/a740g'
-$VersionInfo:FILEVERSION#=1,0,0,0
+$VersionInfo:FILEVERSION#=1,0,0,11
 $VersionInfo:PRODUCTVERSION#=1,0,0,0
 '-----------------------------------------------------------------------------------------------------
 
