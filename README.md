@@ -32,4 +32,4 @@ Due to a bug in all versions of QB64 and QBPE, it fails to link static libraries
 See [issue # 122](https://github.com/QB64-Phoenix-Edition/QB64pe/issues/112).
 Also see this [Discord thread](https://discord.com/channels/975381912350752819/975383819848912926/985214420487655454).
 
-I have made the changes myself and shared the updated QBPE v0.8.2 Windows executable in a [QBPE forum thread](https://qb64phoenix.com/forum/showthread.php?tid=557&pid=3631#pid3631). You can download the executable from here and replace your `qb64.exe` with this one.
+I have made the changes myself and shared the updated QBPE v0.8.2 Windows executable in a [QBPE forum thread](https://qb64phoenix.com/forum/showthread.php?tid=557&pid=3631#pid3631). You can download the executable from forum thread attachment and replace your `qb64.exe` in the `qb64` directory.
