@@ -110,10 +110,16 @@ $If LIBXMPLITE_BI = UNDEFINED Then
     ' EXTERNAL LIBRARIES
     '-----------------------------------------------------------------------------------------------------
     $If WINDOWS Then
-    Declare Static Library "./libxmp_win"
-    $Else
-    Declare Static Library "./libxmp_lnx"
-    $endif
+        Declare Static Library "./libxmp_win"
+        $ElseIf LINUX Then
+            Declare Static Library "./libxmp_lnx"
+        $ElseIf MACOSX Then
+            $ERROR macOS is not supported yet!
+            Declare Static Library "./libxmp_osx"
+        $Else
+            $ERROR Unknown platform!
+            Declare Static Library "./libxmp"
+        $End If
         Function xmp_create_context%&
         Sub xmp_free_context (ByVal context As Offset)
         Function xmp_test_module& (path As String, test_info As xmp_test_info)
