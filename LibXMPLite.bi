@@ -109,7 +109,11 @@ $If LIBXMPLITE_BI = UNDEFINED Then
     '-----------------------------------------------------------------------------------------------------
     ' EXTERNAL LIBRARIES
     '-----------------------------------------------------------------------------------------------------
-    Declare Static Library "./libxmp"
+    $If WINDOWS Then
+            Declare Static Library "./libxmp_win"
+    $Else
+    Declare Static Library "./libxmp_lnx"
+    $endif
         Function xmp_create_context%&
         Sub xmp_free_context (ByVal context As Offset)
         Function xmp_test_module& (path As String, test_info As xmp_test_info)
