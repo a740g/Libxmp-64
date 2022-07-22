@@ -110,7 +110,7 @@ $If LIBXMPLITE_BI = UNDEFINED Then
     ' EXTERNAL LIBRARIES
     '-----------------------------------------------------------------------------------------------------
     $If WINDOWS Then
-            Declare Static Library "./libxmp_win"
+    Declare Static Library "./libxmp_win"
     $Else
     Declare Static Library "./libxmp_lnx"
     $endif
