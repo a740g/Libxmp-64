@@ -15,12 +15,12 @@ $If LIBXMPLITE_BAS = UNDEFINED Then
     ' Small test code for debugging the library
     '-----------------------------------------------------------------------------------------------------
     '$Debug
-    'If XMPLoadFile("C:\Users\samue\OneDrive\Public\Media\Music\rez-monday.mod") Then
+    'If XMPLoadFile("C:\Users\samue\OneDrive\Documents\GitHub\QB64-LibXMPLite\mods\radix-happy_sundays.mod") Then
     '    XMPStartPlayer
     '    Do
     '        XMPUpdatePlayer
     '        Locate 1, 1
-    '        Print Using "Order: ###    Pattern: ###    Row: ###    BPM: ###    Speed: ###"; XMPPlayer.frame.position; XMPPlayer.frame.pattern; XMPPlayer.frame.row; XMPPlayer.frame.bpm; XMPPlayer.frame.speed;
+    '        Print Using "Order: ###    Pattern: ###    Row: ###    BPM: ###    Speed: ###"; XMPPlayer.frameInfo.position; XMPPlayer.frameInfo.pattern; XMPPlayer.frameInfo.row; XMPPlayer.frameInfo.bpm; XMPPlayer.frameInfo.speed;
     '        Limit 60
     '    Loop While KeyHit <> 27 And XMPPlayer.isPlaying
     '    XMPStopPlayer
@@ -73,7 +73,7 @@ $If LIBXMPLITE_BAS = UNDEFINED Then
         End If
 
         ' Allocate the mixer buffer
-        XMPPlayer.soundBufferSize = SndRate * XMP_SOUND_BUFFER_SAMPLE_SIZE * XMP_SOUND_BUFFER_SIZE_MULTIPLIER
+        XMPPlayer.soundBufferSize = (SndRate \ 40) * XMP_SOUND_BUFFER_FRAME_SIZE
         XMPPlayer.soundBuffer = MemNew(XMPPlayer.soundBufferSize)
 
         ' Exit if memory was not allocated
@@ -83,6 +83,11 @@ $If LIBXMPLITE_BAS = UNDEFINED Then
             xmp_free_context XMPPlayer.context
             XMPPlayer.context = NULL
         End If
+
+        ' Set some player properties
+        ' These makes the sound quality much better when devices have sample rates other than 44100
+        XMPPlayer.errorCode = xmp_set_player(XMPPlayer.context, XMP_PLAYER_INTERP, XMP_INTERP_SPLINE)
+        XMPPlayer.errorCode = xmp_set_player(XMPPlayer.context, XMP_PLAYER_DSP, XMP_DSP_ALL)
 
         ' Allocate a sound pipe
         XMPPlayer.soundHandle = SndOpenRaw
@@ -146,8 +151,8 @@ $If LIBXMPLITE_BAS = UNDEFINED Then
 
         ' Push the samples to the sound pipe
         Dim i As Unsigned Long
-        For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES Step XMP_SOUND_BUFFER_SAMPLE_SIZE
-            SndRaw MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i, Integer) / 32768!, MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES, Integer) / 32768!, XMPPlayer.soundHandle
+        For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_SAMPLE_SIZE Step XMP_SOUND_BUFFER_FRAME_SIZE
+            SndRaw MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i, Integer) / 32768!, MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_SAMPLE_SIZE, Integer) / 32768!, XMPPlayer.soundHandle
         Next
     End Sub
 

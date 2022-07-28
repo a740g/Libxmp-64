@@ -166,7 +166,7 @@ Sub DrawInfoScreen
     Color 2: PrintString (20, 32), "0 [ms]"
     Color 2: PrintString (532, 32), Left$(Str$(ns / SndRate * 1000), 6) + " [ms]"
     c = 7: x = 22: y = 96 'framecolor/origin
-    For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES Step XMP_SOUND_BUFFER_SAMPLE_SIZE
+    For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_SAMPLE_SIZE Step XMP_SOUND_BUFFER_FRAME_SIZE
         lSamp = MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i, Integer)
         xp = (ow / ns * (i / XMP_SOUND_BUFFER_SAMPLE_SIZE)) + x
         yp = (lSamp / 32768 * oh)
@@ -181,8 +181,8 @@ Sub DrawInfoScreen
     Color 2: PrintString (20, 160), "0 [ms]"
     Color 2: PrintString (532, 160), Left$(Str$(ns / SndRate * 1000), 6) + " [ms]"
     c = 7: x = 22: y = 224 'framecolor/origin
-    For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES Step XMP_SOUND_BUFFER_SAMPLE_SIZE
-        rSamp = MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_CHANNEL_SAMPLE_BYTES, Integer)
+    For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_SAMPLE_SIZE Step XMP_SOUND_BUFFER_FRAME_SIZE
+        rSamp = MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_SAMPLE_SIZE, Integer)
         xp = (ow / ns * (i / XMP_SOUND_BUFFER_SAMPLE_SIZE)) + x
         yp = (rSamp / 32768 * oh)
         If Abs(yp) > oh Then yp = oh * Sgn(yp) + y: c = 12 Else yp = yp + y
