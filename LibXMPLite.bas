@@ -92,6 +92,9 @@ $If LIBXMPLITE_BAS = UNDEFINED Then
         ' Allocate a sound pipe
         XMPPlayer.soundHandle = SndOpenRaw
 
+        ' Get the frame information
+        xmp_get_frame_info XMPPlayer.context, XMPPlayer.frameInfo
+
         XMPLoadFile = TRUE
     End Function
 

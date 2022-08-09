@@ -27,9 +27,6 @@ Sub XMPSetVolume (nVolume As Integer)
 
 ## Important note
 
-Due to a bug in all versions of QB64 and QBPE, it fails to link static libraries on Windows. There is a workaround (fix?). However, as of QBPE version v0.8.2, it has not made it's way to the [binary release](https://github.com/QB64-Phoenix-Edition/QB64pe/releases).
+- Due to a bug in all versions of QB64 and QBPE (v0.8.2 and lower), it fails to link static libraries on Windows. There is a fix that should make it into the next QBPE release. See [issue # 122](https://github.com/QB64-Phoenix-Edition/QB64pe/issues/112). Also see this [Discord thread](https://discord.com/channels/975381912350752819/975383819848912926/985214420487655454). I have made the changes myself and shared the updated QBPE v0.8.2 Windows executable in a [QBPE forum thread](https://qb64phoenix.com/forum/showthread.php?tid=557&pid=3631#pid3631). You can download the executable from forum thread attachment and replace your `qb64.exe` in the `qb64` directory.
 
-See [issue # 122](https://github.com/QB64-Phoenix-Edition/QB64pe/issues/112).
-Also see this [Discord thread](https://discord.com/channels/975381912350752819/975383819848912926/985214420487655454).
-
-I have made the changes myself and shared the updated QBPE v0.8.2 Windows executable in a [QBPE forum thread](https://qb64phoenix.com/forum/showthread.php?tid=557&pid=3631#pid3631). You can download the executable from forum thread attachment and replace your `qb64.exe` in the `qb64` directory.
+- IT, XM, S3M & MOD support is built into [QBPE with miniaudio backend](https://github.com/a740g/QBPE). The [miniaudio](https://miniaud.io/) backend in this version of OBPE uses [Libxmp-lite](https://github.com/libxmp/libxmp/tree/master/lite). So, this may not compile with [QBPE with miniaudio backend](https://github.com/a740g/QBPE). Use this only with QB64 and QBPE with OpenAL backend.
