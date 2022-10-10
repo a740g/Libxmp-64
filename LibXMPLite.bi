@@ -125,15 +125,15 @@ $If LIBXMPLITE_BI = UNDEFINED Then
     ' EXTERNAL LIBRARIES
     '-----------------------------------------------------------------------------------------------------
     $If WINDOWS Then
-        Declare Static Library "./libxmp_win"
-        $ElseIf LINUX Then
-            Declare Static Library "./libxmp_lnx"
+            Declare Static Library "./libxmp_win"
+    $ElseIf LINUX Then
+        Declare Static Library "./xmp_lnx" ' QB64 removes the 'lib' prefix on Linux
         $ElseIf MACOSX Then
             $ERROR macOS is not supported yet!
-            Declare Static Library "./libxmp_osx"
+            Declare Static Library "./xmp_osx"
         $Else
             $ERROR Unknown platform!
-            Declare Static Library "./libxmp"
+            Declare Static Library "./xmp"
         $End If
         Function xmp_create_context%&
         Sub xmp_free_context (ByVal context As Offset)
