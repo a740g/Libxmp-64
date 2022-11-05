@@ -32,15 +32,17 @@ $If LIBXMPLITE_BAS = UNDEFINED Then
     ' FUNCTIONS & SUBROUTINES
     '-----------------------------------------------------------------------------------------------------
     ' Loads the MOD file into memory and prepares all required gobals
-    Function XMPLoadFile%% (sFileName As String)
+    Function XMPFileLoad%% (sFileName As String)
+        Shared XMPPlayer As XMPPlayerType
+
         ' By default we assume a failure
-        XMPLoadFile = FALSE
+        XMPFileLoad = FALSE
 
         ' Check if the file exists
         If Not FileExists(sFileName) Then Exit Function
 
         ' If a song is already loaded then unload and free resources
-        If XMPPlayer.context <> NULL Then XMPStopPlayer
+        If XMPPlayer.context <> NULL Then XMPPlayerStop
 
         ' Check if the file is a valid module music
         XMPPlayer.errorCode = xmp_test_module(sFileName + Chr$(NULL), XMPPlayer.testInfo)
@@ -95,12 +97,14 @@ $If LIBXMPLITE_BAS = UNDEFINED Then
         ' Get the frame information
         xmp_get_frame_info XMPPlayer.context, XMPPlayer.frameInfo
 
-        XMPLoadFile = TRUE
+        XMPFileLoad = TRUE
     End Function
 
 
     ' Kickstarts playback
-    Sub XMPStartPlayer
+    Sub XMPPlayerStart
+        Shared XMPPlayer As XMPPlayerType
+
         If XMPPlayer.context <> NULL Then
             XMPPlayer.isPaused = FALSE
             XMPPlayer.isPlaying = TRUE
@@ -109,7 +113,9 @@ $If LIBXMPLITE_BAS = UNDEFINED Then
 
 
     ' Stops the player and frees all allocated resources
-    Sub XMPStopPlayer
+    Sub XMPPlayerStop
+        Shared XMPPlayer As XMPPlayerType
+
         ' Free the player and loaded module
         If XMPPlayer.context <> NULL Then
             ' Free the sound pipe
@@ -128,9 +134,61 @@ $If LIBXMPLITE_BAS = UNDEFINED Then
     End Sub
 
 
+    ' Restarts playback
+    Sub XMPPlayerRestart
+        Shared XMPPlayer As XMPPlayerType
+
+        If XMPPlayer.context <> NULL And XMPPlayer.isPlaying And Not XMPPlayer.isPaused Then
+            xmp_restart_module XMPPlayer.context
+        End If
+    End Sub
+
+
+    ' Jumps to the next position
+    Sub XMPPlayerNextPosition
+        Shared XMPPlayer As XMPPlayerType
+
+        If XMPPlayer.context <> NULL And XMPPlayer.isPlaying And Not XMPPlayer.isPaused Then
+            XMPPlayer.errorCode = xmp_next_position&(XMPPlayer.context)
+        End If
+    End Sub
+
+
+    ' Jumps to the previous position
+    Sub XMPPlayerPreviousPosition
+        Shared XMPPlayer As XMPPlayerType
+
+        If XMPPlayer.context <> NULL And XMPPlayer.isPlaying And Not XMPPlayer.isPaused Then
+            XMPPlayer.errorCode = xmp_prev_position&(XMPPlayer.context)
+        End If
+    End Sub
+
+
+    ' Just to a specific position
+    Sub XMPPlayerSetPosition (nPosition As Long)
+        Shared XMPPlayer As XMPPlayerType
+
+        If XMPPlayer.context <> NULL And XMPPlayer.isPlaying And Not XMPPlayer.isPaused Then
+            XMPPlayer.errorCode = xmp_set_position&(XMPPlayer.context, nPosition)
+        End If
+    End Sub
+
+
+    ' Just to a specific time
+    Sub XMPPlayerSeekTime (nTime As Long)
+        Shared XMPPlayer As XMPPlayerType
+
+        If XMPPlayer.context <> NULL And XMPPlayer.isPlaying And Not XMPPlayer.isPaused Then
+            XMPPlayer.errorCode = xmp_seek_time&(XMPPlayer.context, nTime)
+        End If
+    End Sub
+
+
     ' This handles playback and keeping track of the render buffer
     ' You can call this as frequenctly as you want. The routine will simply exit if nothing is to be done
-    Sub XMPUpdatePlayer
+    Sub XMPPlayerUpdate
+        Shared XMPPlayer As XMPPlayerType
+
         ' If song is done, paused or we already have enough samples to play then exit
         If XMPPlayer.context = NULL Or Not XMPPlayer.isPlaying Or XMPPlayer.isPaused Or SndRawLen(XMPPlayer.soundHandle) > XMP_SOUND_TIME_MIN Then Exit Sub
 
@@ -161,7 +219,9 @@ $If LIBXMPLITE_BAS = UNDEFINED Then
 
 
     ' Sets the master volume (0 - 100)
-    Sub XMPSetVolume (nVolume As Integer)
+    Sub XMPPlayerVolume (nVolume As Long)
+        Shared XMPPlayer As XMPPlayerType
+
         If XMPPlayer.context <> NULL And XMPPlayer.isPlaying Then
             If nVolume < 0 Then
                 XMPPlayer.errorCode = xmp_set_player(XMPPlayer.context, XMP_PLAYER_VOLUME, 0)
@@ -175,9 +235,11 @@ $If LIBXMPLITE_BAS = UNDEFINED Then
 
 
     ' Gets the master volume
-    Function XMPGetVolume%
+    Function XMPPlayerVolume&
+        Shared XMPPlayer As XMPPlayerType
+
         If XMPPlayer.context <> NULL And XMPPlayer.isPlaying Then
-            XMPGetVolume = xmp_get_player(XMPPlayer.context, XMP_PLAYER_VOLUME)
+            XMPPlayerVolume = xmp_get_player(XMPPlayer.context, XMP_PLAYER_VOLUME)
         End If
     End Function
     '-----------------------------------------------------------------------------------------------------

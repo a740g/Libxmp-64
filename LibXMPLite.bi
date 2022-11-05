@@ -18,7 +18,7 @@ $If LIBXMPLITE_BI = UNDEFINED Then
     '-----------------------------------------------------------------------------------------------------
     ' Compiler check
     $If 32BIT Then
-            $ERROR This requires the 64-bit QB64 compiler!
+            $ERROR This requires the 64-bit QB64-PE compiler!
     $End If
     '-----------------------------------------------------------------------------------------------------
 
@@ -125,9 +125,13 @@ $If LIBXMPLITE_BI = UNDEFINED Then
     ' EXTERNAL LIBRARIES
     '-----------------------------------------------------------------------------------------------------
     $If WINDOWS Then
+        $If LIBXMP_DLL = UNDEFINED Then
             Declare Static Library "./libxmp_win"
-    $ElseIf LINUX Then
-        Declare Static Library "./xmp_lnx" ' QB64 removes the 'lib' prefix on Linux
+            $Else
+                Declare Dynamic Library "./libxmp"
+            $End If
+        $ElseIf LINUX Then
+            Declare Static Library "./xmp_lnx" ' QB64 removes the 'lib' prefix on Linux
         $ElseIf MACOSX Then
             $ERROR macOS is not supported yet!
             Declare Static Library "./xmp_osx"
@@ -146,13 +150,18 @@ $If LIBXMPLITE_BI = UNDEFINED Then
         Sub xmp_get_frame_info (ByVal context As Offset, frame_info As xmp_frame_info)
         Function xmp_get_player& (ByVal context As Offset, Byval param As Long)
         Function xmp_set_player& (ByVal context As Offset, Byval param As Long, Byval value As Long)
+        Function xmp_next_position& (ByVal context As Offset)
+        Function xmp_prev_position& (ByVal context As Offset)
+        Function xmp_set_position& (ByVal context As Offset, Byval posi As Long)
+        Sub xmp_restart_module (ByVal context As Offset)
+        Function xmp_seek_time& (ByVal context As Offset, Byval msecs As Long)
     End Declare
     '-----------------------------------------------------------------------------------------------------
 
     '-----------------------------------------------------------------------------------------------------
     ' GLOBAL VARIABLES
     '-----------------------------------------------------------------------------------------------------
-    Dim Shared XMPPlayer As XMPPlayerType
+    Dim XMPPlayer As XMPPlayerType
     '-----------------------------------------------------------------------------------------------------
 $End If
 '---------------------------------------------------------------------------------------------------------
