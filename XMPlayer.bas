@@ -70,7 +70,7 @@ Do
     k = KeyHit
     Display
     Limit FRAME_RATE_MAX
-Loop Until k = 27
+Loop Until k = KEY_ESCAPE
 
 System
 '-----------------------------------------------------------------------------------------------------
@@ -112,50 +112,50 @@ Sub PlaySong (fileName As String)
         k = KeyHit
 
         Select Case k
-            Case 32 ' SPC - toggle pause
+            Case KEY_SPACE_BAR ' SPC - toggle pause
                 XMPPlayer.isPaused = Not XMPPlayer.isPaused
 
-            Case 43, 61 ' + - volume up
+            Case KEY_PLUS, KEY_EQUALS ' + = volume up
                 Volume = Volume + 1
                 XMPPlayerVolume Volume
                 Volume = XMPPlayerVolume
 
-            Case 45, 95 ' - - volume down
+            Case KEY_MINUS, KEY_UNDERSCORE ' - _ volume down
                 Volume = Volume - 1
                 XMPPlayerVolume Volume
                 Volume = XMPPlayerVolume
 
-            Case 76, 108 ' L - toggle looping
+            Case KEY_LOWER_L, KEY_UPPER_L ' L - toggle looping
                 XMPPlayer.isLooping = Not XMPPlayer.isLooping
 
-            Case 82, 114 ' R -  rewind
+            Case KEY_UPPER_R, KEY_LOWER_R ' R -  rewind
                 XMPPlayerRestart
 
-            Case 19200 ' <- - rewind one position
+            Case KEY_LEFT_ARROW ' <- - rewind one position
                 XMPPlayerPreviousPosition
 
-            Case 19712 ' -> - fast forward on position
+            Case KEY_RIGHT_ARROW ' -> - fast forward on position
                 XMPPlayerNextPosition
 
-            Case 79, 111 ' O - toggle oscillator
+            Case KEY_UPPER_O, KEY_LOWER_O ' O - toggle oscillator
                 OsciType = OsciType Xor 3
 
-            Case 70 ' F - zoom in (smaller freq range)
+            Case KEY_UPPER_F ' F - zoom in (smaller freq range)
                 If FreqFact < 16 Then FreqFact = FreqFact * 2
 
-            Case 102 ' f - zoom out (bigger freq range)
+            Case KEY_LOWER_F ' f - zoom out (bigger freq range)
                 If FreqFact > 2 Then FreqFact = FreqFact \ 2
 
-            Case 77 ' M - scale up (bring out peaks)
+            Case KEY_UPPER_M ' M - scale up (bring out peaks)
                 If MagFact < 5.0! Then MagFact = MagFact + 0.25!
 
-            Case 109 ' m - scale down (flatten peaks)
+            Case KEY_LOWER_M ' m - scale down (flatten peaks)
                 If MagFact > 1.0! Then MagFact = MagFact - 0.25!
 
-            Case 86 ' V - volume up (louder)
+            Case KEY_UPPER_V ' V - volume up (louder)
                 If VolBoost < 5.0! Then VolBoost = VolBoost + 0.05!
 
-            Case 118 ' v - volume down (quieter)
+            Case KEY_LOWER_V ' v - volume down (quieter)
                 If VolBoost > 1.0! Then VolBoost = VolBoost - 0.05!
         End Select
 
@@ -166,7 +166,7 @@ Sub PlaySong (fileName As String)
         Limit FRAME_RATE_MAX
 
         loopCounter = loopCounter + 1
-    Loop Until Not XMPPlayer.isPlaying Or k = 27 Or TotalDroppedFiles > 0
+    Loop Until Not XMPPlayer.isPlaying Or k = KEY_ESCAPE Or TotalDroppedFiles > 0
 
     XMPPlayerStop
 
