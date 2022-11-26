@@ -125,10 +125,10 @@ $If LIBXMPLITE_BI = UNDEFINED Then
     ' EXTERNAL LIBRARIES
     '-----------------------------------------------------------------------------------------------------
     $If WINDOWS Then
-        $If LIBXMP_DLL = UNDEFINED Then
-            Declare Static Library "./libxmp_win"
-            $Else
-                Declare Dynamic Library "./libxmp"
+        $If LIBXMP_STATIC = DEFINED Then
+                DECLARE STATIC LIBRARY "./libxmp_win"
+        $Else
+            Declare Dynamic Library "./libxmp"
             $End If
         $ElseIf LINUX Then
             Declare Static Library "./xmp_lnx" ' QB64 removes the 'lib' prefix on Linux

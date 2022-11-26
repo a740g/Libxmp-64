@@ -6,9 +6,9 @@
 '-----------------------------------------------------------------------------------------------------
 ' HEADER FILES
 '-----------------------------------------------------------------------------------------------------
-' On Windows libxmp.dll is preferred. Comment the line below to link statically
+' On Windows libxmp.dll is preferred. Un-comment the line below to link statically
 ' On Linux, this is ignored and the library is linked statically always
-$Let LIBXMP_DLL = TRUE
+'$LET LIBXMP_STATIC = TRUE
 '$Include:'./LibXMPLite.bi'
 '-----------------------------------------------------------------------------------------------------
 

@@ -13,7 +13,7 @@ This is also loosely based on a [similar library](https://qb64phoenix.com/forum/
 - Easy plug-&-play API optimized for demos & games
 - Works with the 64-bit QB64 complier (unlike RhoSigma's library that is 32-bit only)
 - Libxmp is statically linked to the complied executable (no DLL dependency)
-- Can also easily link to libxmp.dll in Windows with a simple line - `$Let LIBXMP_DLL = TRUE`
+- Links to libxmp.dll on Windows. Use `$Let LIBXMP_STATIC = TRUE` before including `LibXMPLite.bi` to avoid
 - Using the DLL bypasses the QB64-PE built-in libxmp-lite
 - Demo player that shows how to use the library
 
