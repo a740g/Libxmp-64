@@ -126,7 +126,7 @@ $If LIBXMPLITE_BI = UNDEFINED Then
     '-----------------------------------------------------------------------------------------------------
     $If WINDOWS Then
         $If LIBXMP_STATIC = DEFINED Then
-                DECLARE STATIC LIBRARY "./libxmp_win"
+                Declare Static Library "./libxmp_win"
         $Else
             Declare Dynamic Library "./libxmp"
             $End If
