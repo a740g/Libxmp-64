@@ -12,9 +12,9 @@ This is also loosely based on a [similar library](https://qb64phoenix.com/forum/
 
 - Easy plug-&-play API optimized for demos & games
 - Works with the 64-bit QB64 complier (unlike RhoSigma's library that is 32-bit only)
-- Libxmp is statically linked to the complied executable (no DLL dependency)
+- Libxmp can be statically linked to the complied executable (no DLL dependency)
 - Links to libxmp.dll on Windows. Use `$Let LIBXMP_STATIC = TRUE` before including `LibXMPLite.bi` to avoid
-- Using the DLL bypasses the QB64-PE built-in libxmp-lite
+- Using the DLL, bypasses the QB64-PE's built-in libxmp-lite
 - Demo player that shows how to use the library
 
 ## API
@@ -35,6 +35,6 @@ Function XMPPlayerVolume&
 
 ## Important note
 
-- Due to a bug in some versions of QB64 (v2.0.2 and lower) and QB64-PE (v0.8.2 and lower), it fails to link static libraries on Windows. This has been fixed in [QB64-PE v3.0.0+](https://github.com/QB64-Phoenix-Edition/QB64pe/releases/). See [issue # 122](https://github.com/QB64-Phoenix-Edition/QB64pe/issues/112) and this [Discord thread](https://discord.com/channels/975381912350752819/975383819848912926/985214420487655454).
+- This uses new features introduced in [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases) and as such may not work correctly or reliably with QB64.
 
-- IT, XM, S3M & MOD support is built into [QB64-PE v3.1.0+](https://github.com/QB64-Phoenix-Edition/QB64pe/releases/). The [miniaudio](https://miniaud.io/) backend in this version of OB64-PE uses [Libxmp-lite](https://github.com/libxmp/libxmp/tree/master/lite). So, this is not required with versions of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases/) >= v3.1.0 with the default `miniaudio` backend selected. Using it anyway will cause the library to link to the QB64-PE built-in `libxmp-lite`. To work around this, use `libxmp.dll` instead. See [this](https://github.com/a740g/QB64-LibXMPLite/blob/main/XMPlayer.bas#L9).
+- IT, XM, S3M & MOD support is built into [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases/). The [miniaudio](https://miniaud.io/) backend in OB64-PE uses [Libxmp-lite](https://github.com/libxmp/libxmp/tree/master/lite). So, this is not technically not required. Using it anyway will cause the library to link against QB64-PE's built-in `libxmp-lite`. To work around this, use `libxmp.dll` instead. See [this](https://github.com/a740g/QB64-LibXMPLite/blob/main/XMPlayer.bas#L9).

@@ -1,6 +1,6 @@
 '-----------------------------------------------------------------------------------------------------
-' XMP Player
-' Copyright (c) 2022 Samuel Gomes
+' XMPlayer
+' Copyright (c) 2023 Samuel Gomes
 '-----------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------
@@ -16,16 +16,16 @@
 ' METACOMMANDS
 '-----------------------------------------------------------------------------------------------------
 $ExeIcon:'./XMPlayer.ico'
-$VersionInfo:CompanyName='Samuel Gomes'
-$VersionInfo:FileDescription='XMPlayer executable'
-$VersionInfo:InternalName='XMPlayer'
-$VersionInfo:LegalCopyright='Copyright (c) 2022, Samuel Gomes'
-$VersionInfo:LegalTrademarks='All trademarks are property of their respective owners'
-$VersionInfo:OriginalFilename='XMPlayer.exe'
-$VersionInfo:ProductName='XMPlayer'
-$VersionInfo:Web='https://github.com/a740g'
-$VersionInfo:Comments='https://github.com/a740g'
-$VersionInfo:FILEVERSION#=2,0,0,1
+$VersionInfo:CompanyName=Samuel Gomes
+$VersionInfo:FileDescription=XMPlayer executable
+$VersionInfo:InternalName=XMPlayer
+$VersionInfo:LegalCopyright=Copyright (c) 2022, Samuel Gomes
+$VersionInfo:LegalTrademarks=All trademarks are property of their respective owners
+$VersionInfo:OriginalFilename=XMPlayer.exe
+$VersionInfo:ProductName=XMPlayer
+$VersionInfo:Web=https://github.com/a740g
+$VersionInfo:Comments=https://github.com/a740g
+$VersionInfo:FILEVERSION#=2,0,0,6
 $VersionInfo:PRODUCTVERSION#=2,0,0,0
 '-----------------------------------------------------------------------------------------------------
 
@@ -188,15 +188,16 @@ Sub DrawInfoScreen
 
     If XMPPlayer.isPaused Or Not XMPPlayer.isPlaying Then Color 12 Else Color 7
 
-    Locate 22, 43: Print Using "Buffered sound: #.##### seconds"; SndRawLen(XMPPlayer.soundHandle);
-    Locate 23, 43: Print "Position / Row:"; XMPPlayer.frameInfo.position; "/"; XMPPlayer.frameInfo.row; "  ";
-    Locate 24, 43: Print "Current volume:"; Volume;
+    Locate 21, 43: Print Using "Buffered sound: #.##### seconds"; SndRawLen(XMPPlayer.soundHandle);
+    Locate 22, 43: Print "Position / Row:"; XMPPlayer.frameInfo.position; "/"; XMPPlayer.frameInfo.row; "  ";
+    Locate 23, 43: Print "Current volume:"; Volume;
     minute = Right$("00" + LTrim$(Str$((XMPPlayer.frameInfo.time + 500) \ 60000)), 2)
     second = Right$("00" + LTrim$(Str$(((XMPPlayer.frameInfo.time + 500) \ 1000) Mod 60)), 2)
-    Locate 25, 43: Print Using "  Elapsed time: &:& (mm:ss)"; minute; second;
+    Locate 24, 43: Print Using "  Elapsed time: &:& (mm:ss)"; minute; second;
     minute = Right$("00" + LTrim$(Str$((XMPPlayer.frameInfo.total_time + 500) \ 60000)), 2)
     second = Right$("00" + LTrim$(Str$(((XMPPlayer.frameInfo.total_time + 500) \ 1000) Mod 60)), 2)
-    Locate 26, 43: Print Using "    Total time: &:& (mm:ss)"; minute; second;
+    Locate 25, 43: Print Using "    Total time: &:& (mm:ss)"; minute; second;
+    Locate 26, 50: Print "Looping: "; BoolToStr(XMPPlayer.isLooping, 2); " ";
 
     Color 9
 
@@ -402,6 +403,21 @@ Function GetFileNameFromPath$ (pathName As String)
     Else
         GetFileNameFromPath = Right$(pathName, Len(pathName) - i)
     End If
+End Function
+
+
+' Gets a string form of the boolean value passed
+Function BoolToStr$ (expression As Long, style As Unsigned Byte)
+    Select Case style
+        Case 1
+            If expression Then BoolToStr = "On" Else BoolToStr = "Off"
+        Case 2
+            If expression Then BoolToStr = "Enabled" Else BoolToStr = "Disabled"
+        Case 3
+            If expression Then BoolToStr = "1" Else BoolToStr = "0"
+        Case Else
+            If expression Then BoolToStr = "True" Else BoolToStr = "False"
+    End Select
 End Function
 
 

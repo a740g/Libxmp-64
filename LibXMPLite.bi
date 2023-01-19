@@ -1,6 +1,6 @@
 '---------------------------------------------------------------------------------------------------------
 ' LibXMP Lite
-' Copyright (c) 2022 Samuel Gomes
+' Copyright (c) 2023 Samuel Gomes
 '
 ' Most of the stuff here is from https://github.com/libxmp/libxmp/blob/master/include/xmp.h
 '---------------------------------------------------------------------------------------------------------
@@ -18,7 +18,7 @@ $If LIBXMPLITE_BI = UNDEFINED Then
     '-----------------------------------------------------------------------------------------------------
     ' Compiler check
     $If 32BIT Then
-            $ERROR This requires the 64-bit QB64-PE compiler!
+            $ERROR This requires the 64-bit QB64-PE compiler from https://github.com/QB64-Phoenix-Edition/QB64pe/releases
     $End If
     '-----------------------------------------------------------------------------------------------------
 
@@ -133,10 +133,10 @@ $If LIBXMPLITE_BI = UNDEFINED Then
         $ElseIf LINUX Then
             Declare Static Library "./xmp_lnx" ' QB64 removes the 'lib' prefix on Linux
         $ElseIf MACOSX Then
-            $ERROR macOS is not supported yet!
+            $ERROR macOS is not supported yet
             Declare Static Library "./xmp_osx"
         $Else
-            $ERROR Unknown platform!
+            $ERROR Unknown platform
             Declare Static Library "./xmp"
         $End If
         Function xmp_create_context%&
