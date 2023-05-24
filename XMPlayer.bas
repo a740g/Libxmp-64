@@ -1,225 +1,250 @@
-'-----------------------------------------------------------------------------------------------------
-' XMPlayer
+'-----------------------------------------------------------------------------------------------------------------------
+' Demo player for Libxmp
 ' Copyright (c) 2023 Samuel Gomes
-'-----------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 
-'-----------------------------------------------------------------------------------------------------
-' HEADER FILES
-'-----------------------------------------------------------------------------------------------------
-' On Windows libxmp.dll is preferred. Un-comment the line below to link statically
-' On Linux, this is ignored and the library is linked statically always
-'$LET LIBXMP_STATIC = TRUE
-'$Include:'./LibXMPLite.bi'
-'-----------------------------------------------------------------------------------------------------
-
-'-----------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 ' METACOMMANDS
-'-----------------------------------------------------------------------------------------------------
-$ExeIcon:'./XMPlayer.ico'
-$VersionInfo:CompanyName=Samuel Gomes
-$VersionInfo:FileDescription=XMPlayer executable
-$VersionInfo:InternalName=XMPlayer
-$VersionInfo:LegalCopyright=Copyright (c) 2022, Samuel Gomes
-$VersionInfo:LegalTrademarks=All trademarks are property of their respective owners
-$VersionInfo:OriginalFilename=XMPlayer.exe
-$VersionInfo:ProductName=XMPlayer
-$VersionInfo:Web=https://github.com/a740g
-$VersionInfo:Comments=https://github.com/a740g
-$VersionInfo:FILEVERSION#=2,0,0,6
-$VersionInfo:PRODUCTVERSION#=2,0,0,0
-'-----------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
+$IF VERSION < 3.7 THEN
+        $ERROR This requires the latest version of QB64-PE from https://github.com/QB64-Phoenix-Edition/QB64pe/releases
+$END IF
+DEFLNG A-Z
+OPTION _EXPLICIT
+'$STATIC
+OPTION BASE 1
+$RESIZE:SMOOTH
+$UNSTABLE:HTTP
+'-----------------------------------------------------------------------------------------------------------------------
 
-'-----------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
+' HEADER FILES
+'-----------------------------------------------------------------------------------------------------------------------
+'$INCLUDE:'Libxmp64.bi'
+'-----------------------------------------------------------------------------------------------------------------------
+
+'-----------------------------------------------------------------------------------------------------------------------
+' METACOMMANDS
+'-----------------------------------------------------------------------------------------------------------------------
+$EXEICON:'./XMPlayer.ico'
+$VERSIONINFO:CompanyName=Samuel Gomes
+$VERSIONINFO:FileDescription=XMPlayer executable
+$VERSIONINFO:InternalName=XMPlayer
+$VERSIONINFO:LegalCopyright=Copyright (c) 2022, Samuel Gomes
+$VERSIONINFO:LegalTrademarks=All trademarks are property of their respective owners
+$VERSIONINFO:OriginalFilename=XMPlayer.exe
+$VERSIONINFO:ProductName=XMPlayer
+$VERSIONINFO:Web=https://github.com/a740g
+$VERSIONINFO:Comments=https://github.com/a740g
+$VERSIONINFO:FILEVERSION#=3,0,0,0
+$VERSIONINFO:PRODUCTVERSION#=3,0,0,0
+'-----------------------------------------------------------------------------------------------------------------------
+
+'-----------------------------------------------------------------------------------------------------------------------
 ' CONSTANTS
-'-----------------------------------------------------------------------------------------------------
-Const APP_NAME = "XMPlayer"
-Const FRAME_RATE_MAX = 120
-'-----------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
+CONST APP_NAME = "XMPlayer"
+CONST FRAME_RATE_MAX = 120
+'-----------------------------------------------------------------------------------------------------------------------
 
-'-----------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 ' GLOBAL VARIABLES
-'-----------------------------------------------------------------------------------------------------
-Dim Shared Volume As Long, OsciType As Long
-Dim Shared FreqFact As Long, MagFact As Single, VolBoost As Single
-ReDim Shared As Single lSig(0 To 0), rSig(0 To 0)
-ReDim Shared As Single FFTr(0 To 0), FFTi(0 To 0)
-'-----------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
+DIM SHARED Volume AS LONG, OsciType AS LONG
+DIM SHARED FreqFact AS LONG, MagFact AS SINGLE, VolBoost AS SINGLE
+REDIM SHARED AS SINGLE lSig(0 TO 0), rSig(0 TO 0)
+REDIM SHARED AS SINGLE FFTr(0 TO 0), FFTi(0 TO 0)
+'-----------------------------------------------------------------------------------------------------------------------
 
-'-----------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 ' PROGRAM ENTRY POINT
-'-----------------------------------------------------------------------------------------------------
-Title APP_NAME + " " + OS$ ' Set the program name in the titlebar
-ChDir StartDir$ ' Change to the directory specifed by the environment
-AcceptFileDrop ' Enable drag and drop of files
-Screen 12 ' Use 640x480 resolution
-AllowFullScreen SquarePixels , Smooth ' All the user to press Alt+Enter to go fullscreen
-Display ' Only swap buffer when we want
+'-----------------------------------------------------------------------------------------------------------------------
+_TITLE APP_NAME + " " + _OS$ ' Set the program name in the titlebar
+CHDIR _STARTDIR$ ' Change to the directory specifed by the environment
+_ACCEPTFILEDROP ' Enable drag and drop of files
+SCREEN 12 ' Use 640x480 resolution
+_ALLOWFULLSCREEN _SQUAREPIXELS , _SMOOTH ' All the user to press Alt+Enter to go fullscreen
+_PRINTMODE _KEEPBACKGROUND ' print without wiping out the background
+_DISPLAY ' Only swap buffer when we want
+RANDOMIZE TIMER ' seed RNG
 Volume = XMP_VOLUME_MAX ' Set initial volume as 100%
 OsciType = 2 ' 1 = Wave plot / 2 = Frequency spectrum (FFT)
-FreqFact = 8 ' Frequency spectrum X-axis scale (powers of two only [2-16], default 8)
-MagFact = 1 ' Frequency spectrum Y-axis scale (magnitude [1.0-5.0], default 1)
+FreqFact = 2 ' Frequency spectrum X-axis scale (powers of two only [2-16])
+MagFact = 5 ' Frequency spectrum Y-axis scale (magnitude [1.0-5.0])
 VolBoost = 1 ' No change
 ProcessCommandLine ' Check if any files were specified in the command line
 
-Dim k As Long
+' Load from memory test:
+' We'll download a S3M file directly to a memory buffer and then pass that buffer to the library
+' The song should be automatically closed when the user tries to play another tune
+' Also the XMP_Update inside the loop should do nothing with nothing playing
+' If anuthing goes wrong here, then it is silently ignored
+IF XMP_LoadTuneFromMemory(LoadFileFromURL("http://ftp.modland.com/pub/modules/Screamtracker%203/Siren/jazz%20jackrabbit%202%20-%20labratory%20level.s3m")) THEN
+    XMP_Play
+    XMP_Loop NOT 0 ' -1 or true really XD. We'll loop so that we do not have to check if it is playing
+END IF
+
+DIM k AS LONG
 
 ' Main loop
-Do
+DO
+    XMP_Update XMP_SOUND_BUFFER_TIME_DEFAULT ' only here for the into music, otherwise does nothing
+
     ProcessDroppedFiles
-    PrintWelcomeScreen
-    k = KeyHit
-    Display
-    Limit FRAME_RATE_MAX
-Loop Until k = KEY_ESCAPE
 
-System
-'-----------------------------------------------------------------------------------------------------
+    k = _KEYHIT
 
-'-----------------------------------------------------------------------------------------------------
+    IF k = 15104 THEN ProcessSelectedFiles
+
+    PrintWelcomeScreen ' clears, draws and then displays the welcome screen
+
+    _LIMIT FRAME_RATE_MAX
+LOOP UNTIL k = 27
+
+XMP_Stop ' we're being nice
+
+SYSTEM
+'-----------------------------------------------------------------------------------------------------------------------
+
+'-----------------------------------------------------------------------------------------------------------------------
 ' FUNCTIONS & SUBROUTINES
-'-----------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 ' Initializes, loads and plays a mod file
 ' Also checks for input, shows info etc
-Sub PlaySong (fileName As String)
-    Shared XMPPlayer As XMPPlayerType
+SUB PlaySong (fileName AS STRING)
+    SHARED __XMPPlayer AS __XMPPlayerType
 
-    If Not XMPFileLoad(fileName) Then
-        Color 12
-        Print: Print "Failed to load "; fileName; "!"
-        Display
-        Sleep 5
-        Exit Sub
-    End If
+    IF NOT XMP_LoadTuneFromFile(fileName) THEN
+        _MESSAGEBOX APP_NAME, "Failed to load: " + fileName, "error"
+        EXIT SUB
+    END IF
 
     ' Set the app title to display the file name
-    Title APP_NAME + " - " + GetFileNameFromPath(fileName)
+    _TITLE APP_NAME + " - " + GetFileNameFromPath(fileName)
 
-    Cls
-
-    XMPPlayerStart
+    XMP_Play
 
     ' Setup the FFT arrays
-    ReDim As Single lSig(0 To XMPPlayer.soundBufferSize \ XMP_SOUND_BUFFER_SAMPLE_SIZE - 1), rSig(0 To XMPPlayer.soundBufferSize \ XMP_SOUND_BUFFER_SAMPLE_SIZE - 1)
-    ReDim As Single FFTr(0 To XMPPlayer.soundBufferSize \ XMP_SOUND_BUFFER_SAMPLE_SIZE - 1), FFTi(0 To XMPPlayer.soundBufferSize \ XMP_SOUND_BUFFER_SAMPLE_SIZE - 1)
+    REDIM AS SINGLE lSig(0 TO __XMPPlayer.soundBufferFrames - 1), rSig(0 TO __XMPPlayer.soundBufferFrames - 1)
+    REDIM AS SINGLE FFTr(0 TO __XMPPlayer.soundBufferFrames - 1), FFTi(0 TO __XMPPlayer.soundBufferFrames - 1)
 
-    Dim k As Long, loopCounter As Unsigned Long
+    DIM k AS LONG, loopCounter AS _UNSIGNED LONG
 
-    XMPPlayerVolume Volume
+    XMP_SetVolume Volume
 
-    Do
-        XMPPlayerUpdate
+    DO
+        XMP_Update XMP_SOUND_BUFFER_TIME_DEFAULT
 
-        k = KeyHit
+        k = _KEYHIT
 
-        Select Case k
-            Case KEY_SPACE_BAR ' SPC - toggle pause
-                XMPPlayer.isPaused = Not XMPPlayer.isPaused
+        SELECT CASE k
+            CASE 32 ' SPC - toggle pause
+                XMP_Pause NOT XMP_IsPaused
 
-            Case KEY_PLUS, KEY_EQUALS ' + = volume up
+            CASE 43, 61 ' + = volume up
                 Volume = Volume + 1
-                XMPPlayerVolume Volume
-                Volume = XMPPlayerVolume
+                XMP_SetVolume Volume
+                Volume = XMP_GetVolume
 
-            Case KEY_MINUS, KEY_UNDERSCORE ' - _ volume down
+            CASE 45, 95 ' - _ volume down
                 Volume = Volume - 1
-                XMPPlayerVolume Volume
-                Volume = XMPPlayerVolume
+                XMP_SetVolume Volume
+                Volume = XMP_GetVolume
 
-            Case KEY_LOWER_L, KEY_UPPER_L ' L - toggle looping
-                XMPPlayer.isLooping = Not XMPPlayer.isLooping
+            CASE 76, 108 ' L - toggle looping
+                XMP_Loop NOT XMP_IsLooping
 
-            Case KEY_UPPER_R, KEY_LOWER_R ' R -  rewind
-                XMPPlayerRestart
+            CASE 82, 114 ' R -  rewind
+                XMP_Replay
 
-            Case KEY_LEFT_ARROW ' <- - rewind one position
-                XMPPlayerPreviousPosition
+            CASE 19200 ' <- - rewind one position
+                XMP_GoToPreviousPosition
 
-            Case KEY_RIGHT_ARROW ' -> - fast forward on position
-                XMPPlayerNextPosition
+            CASE 19712 ' -> - fast forward on position
+                XMP_GoToNextPosition
 
-            Case KEY_UPPER_O, KEY_LOWER_O ' O - toggle oscillator
-                OsciType = OsciType Xor 3
+            CASE 79, 111 ' O - toggle oscillator
+                OsciType = OsciType XOR 3
 
-            Case KEY_UPPER_F ' F - zoom in (smaller freq range)
-                If FreqFact < 16 Then FreqFact = FreqFact * 2
+            CASE 70 ' F - zoom in (smaller freq range)
+                IF FreqFact < 16 THEN FreqFact = FreqFact * 2
 
-            Case KEY_LOWER_F ' f - zoom out (bigger freq range)
-                If FreqFact > 2 Then FreqFact = FreqFact \ 2
+            CASE 102 ' f - zoom out (bigger freq range)
+                IF FreqFact > 2 THEN FreqFact = FreqFact \ 2
 
-            Case KEY_UPPER_M ' M - scale up (bring out peaks)
-                If MagFact < 5.0! Then MagFact = MagFact + 0.25!
+            CASE 77 ' M - scale up (bring out peaks)
+                IF MagFact < 5.0! THEN MagFact = MagFact + 0.25!
 
-            Case KEY_LOWER_M ' m - scale down (flatten peaks)
-                If MagFact > 1.0! Then MagFact = MagFact - 0.25!
+            CASE 109 ' m - scale down (flatten peaks)
+                IF MagFact > 1.0! THEN MagFact = MagFact - 0.25!
 
-            Case KEY_UPPER_V ' V - volume up (louder)
-                If VolBoost < 5.0! Then VolBoost = VolBoost + 0.05!
+            CASE 86 ' V - volume up (louder)
+                IF VolBoost < 5.0! THEN VolBoost = VolBoost + 0.05!
 
-            Case KEY_LOWER_V ' v - volume down (quieter)
-                If VolBoost > 1.0! Then VolBoost = VolBoost - 0.05!
-        End Select
+            CASE 118 ' v - volume down (quieter)
+                IF VolBoost > 1.0! THEN VolBoost = VolBoost - 0.05!
+        END SELECT
 
-        If loopCounter Mod 2 = 0 Then DrawInfoScreen ' Draw every alternate frame
+        DrawInfoScreen '  clears, draws and then display the info screen
 
-        Display
-
-        Limit FRAME_RATE_MAX
+        _LIMIT FRAME_RATE_MAX
 
         loopCounter = loopCounter + 1
-    Loop Until Not XMPPlayer.isPlaying Or k = KEY_ESCAPE Or TotalDroppedFiles > 0
+    LOOP UNTIL NOT XMP_IsPlaying OR k = 27 OR _TOTALDROPPEDFILES > 0
 
-    XMPPlayerStop
+    XMP_Stop
 
-    Title APP_NAME + " " + OS$ ' Set app title to the way it was
-End Sub
+    _TITLE APP_NAME + " " + _OS$ ' Set app title to the way it was
+END SUB
 
 
 ' Draws the screen during playback
 ' This part is mostly from RhoSigma's player code
-Sub DrawInfoScreen
-    Shared XMPPlayer As XMPPlayerType
+SUB DrawInfoScreen
+    SHARED __XMPPlayer AS __XMPPlayerType
 
-    Dim As Long ow, oh, c, x, y, xp, yp
-    Dim As Long ns, i
-    Dim As Single lSamp, rSamp
-    Dim As String minute, second
+    CLS ' first clear everything
 
-    ns = XMPPlayer.soundBufferSize \ XMP_SOUND_BUFFER_SAMPLE_SIZE 'number of samples in the buffer
+    DIM AS LONG ow, oh, c, x, y, xp, yp, i
+    DIM AS SINGLE lSamp, rSamp
+    DIM AS STRING minute, second
 
-    If XMPPlayer.isPaused Or Not XMPPlayer.isPlaying Then Color 12 Else Color 7
+    IF XMP_IsPaused OR NOT XMP_IsPlaying THEN COLOR 12 ELSE COLOR 7
 
-    Locate 21, 43: Print Using "Buffered sound: #.##### seconds"; SndRawLen(XMPPlayer.soundHandle);
-    Locate 22, 43: Print "Position / Row:"; XMPPlayer.frameInfo.position; "/"; XMPPlayer.frameInfo.row; "  ";
-    Locate 23, 43: Print "Current volume:"; Volume;
-    minute = Right$("00" + LTrim$(Str$((XMPPlayer.frameInfo.time + 500) \ 60000)), 2)
-    second = Right$("00" + LTrim$(Str$(((XMPPlayer.frameInfo.time + 500) \ 1000) Mod 60)), 2)
-    Locate 24, 43: Print Using "  Elapsed time: &:& (mm:ss)"; minute; second;
-    minute = Right$("00" + LTrim$(Str$((XMPPlayer.frameInfo.total_time + 500) \ 60000)), 2)
-    second = Right$("00" + LTrim$(Str$(((XMPPlayer.frameInfo.total_time + 500) \ 1000) Mod 60)), 2)
-    Locate 25, 43: Print Using "    Total time: &:& (mm:ss)"; minute; second;
-    Locate 26, 50: Print "Looping: "; BoolToStr(XMPPlayer.isLooping, 2); " ";
+    LOCATE 21, 43: PRINT "Buffered sound:"; FIX(_SNDRAWLEN(__XMPPlayer.soundHandle) * 1000); "ms ";
+    LOCATE 22, 43: PRINT "Position / Row:"; __XMPPlayer.frameInfo.position; "/"; __XMPPlayer.frameInfo.row; "  ";
+    LOCATE 23, 43: PRINT "Current volume:"; Volume;
+    minute = RIGHT$("00" + LTRIM$(STR$((__XMPPlayer.frameInfo.time + 500) \ 60000)), 2)
+    second = RIGHT$("00" + LTRIM$(STR$(((__XMPPlayer.frameInfo.time + 500) \ 1000) MOD 60)), 2)
+    LOCATE 24, 43: PRINT USING "  Elapsed time: &:& (mm:ss)"; minute; second;
+    minute = RIGHT$("00" + LTRIM$(STR$((__XMPPlayer.frameInfo.total_time + 500) \ 60000)), 2)
+    second = RIGHT$("00" + LTRIM$(STR$(((__XMPPlayer.frameInfo.total_time + 500) \ 1000) MOD 60)), 2)
+    LOCATE 25, 43: PRINT USING "    Total time: &:& (mm:ss)"; minute; second;
+    LOCATE 26, 50: PRINT "Looping: "; BoolToStr(XMP_IsLooping, 2); " ";
 
-    Color 9
+    COLOR 9
 
-    If OsciType = 2 Then
-        Locate 19, 7: Print "F/f - FREQUENCY ZOOM IN/OUT";
-        Locate 20, 7: Print "M/m - MAGNITUDE SCALE UP/DOWN";
-    Else
-        Locate 19, 7: Print "                           ";
-        Locate 20, 7: Print "V/v - VOLUME BOOST UP/DOWN   ";
-    End If
-    Locate 21, 7: Print "O|o - TOGGLE OSCILLATOR TYPE";
-    Locate 22, 7: Print "ESC - NEXT / QUIT";
-    Locate 23, 7: Print "SPC - PLAY / PAUSE";
-    Locate 24, 7: Print "=|+ - INCREASE VOLUME";
-    Locate 25, 7: Print "-|_ - DECREASE VOLUME";
-    Locate 26, 7: Print "L|l - LOOP";
-    Locate 27, 7: Print "R|r - REWIND TO START";
-    Locate 28, 7: Print "/ - REWIND/FORWARD ONE POSITION";
+    IF OsciType = 2 THEN
+        LOCATE 19, 7: PRINT "F/f - FREQUENCY ZOOM IN/OUT";
+        LOCATE 20, 7: PRINT "M/m - MAGNITUDE SCALE UP/DOWN";
+    ELSE
+        LOCATE 19, 7: PRINT "                           ";
+        LOCATE 20, 7: PRINT "V/v - VOLUME BOOST UP/DOWN   ";
+    END IF
+    LOCATE 21, 7: PRINT "O|o - TOGGLE OSCILLATOR TYPE";
+    LOCATE 22, 7: PRINT "ESC - NEXT / QUIT";
+    LOCATE 23, 7: PRINT "SPC - PLAY / PAUSE";
+    LOCATE 24, 7: PRINT "=|+ - INCREASE VOLUME";
+    LOCATE 25, 7: PRINT "-|_ - DECREASE VOLUME";
+    LOCATE 26, 7: PRINT "L|l - LOOP";
+    LOCATE 27, 7: PRINT "R|r - REWIND TO START";
+    LOCATE 28, 7: PRINT "/ - REWIND/FORWARD ONE POSITION";
 
-    On OsciType GOSUB DrawOscillators, DrawFFT
+    ON OsciType GOSUB DrawOscillators, DrawFFT
 
-    Exit Sub
+    _DISPLAY ' flip the frambuffer
+
+    EXIT SUB
 
     DrawOscillators: '--- animate wave form oscillators ---
 
@@ -227,280 +252,370 @@ Sub DrawInfoScreen
     'scale the x-position, same is with the amplitude (y-position).
     ow = 597: oh = 46 'oscillator width/height
     '-----
-    Line (0, 0)-(639, 15), 0, BF
-    Color 6: Locate 1, 24: Print Using "Current volume boost factor = #.##"; VolBoost;
+    COLOR 6: LOCATE 1, 24: PRINT USING "Current volume boost factor = #.##"; VolBoost;
     '-----
-    Line (20, 32)-(620, 144), 0, BF
-    Color 7: PrintString (224, 32), "Left Channel (Wave plot)"
-    Color 2: PrintString (20, 32), "0 [ms]"
-    Color 2: PrintString (556, 32), Left$(Str$(ns / SndRate * 1000), 6) + " [ms]"
+    COLOR 7: _PRINTSTRING (224, 32), "Left Channel (Wave plot)"
+    COLOR 2: _PRINTSTRING (20, 32), "0 [ms]"
+    COLOR 2: _PRINTSTRING (556, 32), LEFT$(STR$(__XMPPlayer.soundBufferFrames / _SNDRATE * 1000), 6) + " [ms]"
     c = 7: x = 22: y = 96 'framecolor/origin
-    For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_SAMPLE_SIZE Step XMP_SOUND_BUFFER_FRAME_SIZE
-        lSamp = MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i, Integer)
-        xp = (ow / ns * (i / XMP_SOUND_BUFFER_SAMPLE_SIZE)) + x
+    FOR i = 0 TO __XMPPlayer.soundBufferBytes - XMP_SOUND_BUFFER_SAMPLE_SIZE STEP XMP_SOUND_BUFFER_FRAME_SIZE
+        lSamp = _MEMGET(__XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET + i, INTEGER)
+        xp = (ow / __XMPPlayer.soundBufferFrames * (i / XMP_SOUND_BUFFER_FRAME_SIZE)) + x
         yp = (lSamp / 32768! * VolBoost * oh)
-        If Abs(yp) > oh Then yp = oh * Sgn(yp) + y: c = 12 Else yp = yp + y
-        If i = 0 Then PSet (xp, yp), 10 Else Line -(xp, yp), 10
-    Next
-    Line (20, 48)-(620, 144), c, B
+        IF ABS(yp) > oh THEN yp = oh * SGN(yp) + y: c = 12 ELSE yp = yp + y
+        IF i = 0 THEN PSET (xp, yp), 10 ELSE LINE -(xp, yp), 10
+    NEXT
+    LINE (20, 48)-(620, 144), c, B
     '-----
-    Line (20, 160)-(620, 272), 0, BF
-    Color 7: PrintString (220, 160), "Right Channel (Wave plot)"
-    Color 2: PrintString (20, 160), "0 [ms]"
-    Color 2: PrintString (556, 160), Left$(Str$(ns / SndRate * 1000), 6) + " [ms]"
+    COLOR 7: _PRINTSTRING (220, 160), "Right Channel (Wave plot)"
+    COLOR 2: _PRINTSTRING (20, 160), "0 [ms]"
+    COLOR 2: _PRINTSTRING (556, 160), LEFT$(STR$(__XMPPlayer.soundBufferFrames / _SNDRATE * 1000), 6) + " [ms]"
     c = 7: x = 22: y = 224 'framecolor/origin
-    For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_SAMPLE_SIZE Step XMP_SOUND_BUFFER_FRAME_SIZE
-        rSamp = MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_SAMPLE_SIZE, Integer)
-        xp = (ow / ns * (i / XMP_SOUND_BUFFER_SAMPLE_SIZE)) + x
+    FOR i = 0 TO __XMPPlayer.soundBufferBytes - XMP_SOUND_BUFFER_SAMPLE_SIZE STEP XMP_SOUND_BUFFER_FRAME_SIZE
+        rSamp = _MEMGET(__XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_SAMPLE_SIZE, INTEGER)
+        xp = (ow / __XMPPlayer.soundBufferFrames * (i / XMP_SOUND_BUFFER_FRAME_SIZE)) + x
         yp = (rSamp / 32768! * VolBoost * oh)
-        If Abs(yp) > oh Then yp = oh * Sgn(yp) + y: c = 12 Else yp = yp + y
-        If i = 0 Then PSet (xp, yp), 10 Else Line -(xp, yp), 10
-    Next
-    Line (20, 176)-(620, 272), c, B
+        IF ABS(yp) > oh THEN yp = oh * SGN(yp) + y: c = 12 ELSE yp = yp + y
+        IF i = 0 THEN PSET (xp, yp), 10 ELSE LINE -(xp, yp), 10
+    NEXT
+    LINE (20, 176)-(620, 272), c, B
 
-    Return
+    RETURN
 
     DrawFFT: '--- animate FFT frequencey oscillators ---
 
     ' Fill the FFT arrays with sample data
-    For i = 0 To XMPPlayer.soundBufferSize - XMP_SOUND_BUFFER_SAMPLE_SIZE Step XMP_SOUND_BUFFER_FRAME_SIZE
-        lSamp = MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i, Integer) / 32768!
-        rSamp = MemGet(XMPPlayer.soundBuffer, XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_SAMPLE_SIZE, Integer) / 32768!
-        If Abs(lSamp) > 1 Then lSamp = Sgn(lSamp) 'clip out of
-        If Abs(rSamp) > 1 Then rSamp = Sgn(rSamp) 'range volume peaks
-        lSig(i \ 4) = lSamp: rSig(i \ 4) = rSamp 'fill FFT signal array
-    Next
+    FOR i = 0 TO __XMPPlayer.soundBufferBytes - XMP_SOUND_BUFFER_SAMPLE_SIZE STEP XMP_SOUND_BUFFER_FRAME_SIZE
+        lSig(i \ XMP_SOUND_BUFFER_FRAME_SIZE) = _MEMGET(__XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET + i, INTEGER) / 32768!
+        rSig(i \ XMP_SOUND_BUFFER_FRAME_SIZE) = _MEMGET(__XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_SAMPLE_SIZE, INTEGER) / 32768!
+    NEXT
 
     'As the oscillators width is probably <> frequency range, we need to
     'scale the x-position, same is with the magnitude (y-position).
     ow = 597: oh = 92 'oscillator width/height
     '-----
-    Line (0, 0)-(639, 15), 0, BF
-    Color 6: Locate 1, 3: Print Using "Current frequence zoom factor = ##  /  Current magnitude scale factor = #.##"; FreqFact; MagFact;
+    COLOR 6: LOCATE 1, 3: PRINT USING "Current frequence zoom factor = ##  /  Current magnitude scale factor = #.##"; FreqFact; MagFact;
     '-----
-    RFFT FFTr(), FFTi(), lSig(), ns
-    Line (20, 32)-(620, 144), 0, BF
-    Color 7: PrintString (188, 32), "Left Channel (Frequency spectrum)"
-    Color 2: PrintString (12, 32), Left$(Str$(SndRate \ ns), 6) + " [Hz]"
-    Color 2: PrintString (532, 32), Left$(Str$((ns \ FreqFact) * SndRate \ ns), 6) + " [Hz]"
+    RFFT FFTr(), FFTi(), lSig()
+    COLOR 7: _PRINTSTRING (188, 32), "Left Channel (Frequency spectrum)"
+    COLOR 2: _PRINTSTRING (12, 32), LEFT$(STR$(_SNDRATE \ __XMPPlayer.soundBufferFrames), 6) + " [Hz]"
+    COLOR 2: _PRINTSTRING (532, 32), LEFT$(STR$((__XMPPlayer.soundBufferFrames \ FreqFact) * _SNDRATE \ __XMPPlayer.soundBufferFrames), 6) + " [Hz]"
     x = 22: y = 142 'origin
-    For i = 0 To ns \ FreqFact
-        xp = (ow / (ns / FreqFact) * i) + x
-        yp = MagFact * Sqr((FFTr(i) * FFTr(i)) + (FFTi(i) * FFTi(i)))
-        If yp > oh Then yp = y - oh Else yp = y - yp
-        If i = 0 Then PSet (xp, yp), 10 Else Line -(xp, yp), 10
-    Next
-    Line (20, 48)-(620, 144), 7, B
+    FOR i = 0 TO __XMPPlayer.soundBufferFrames \ FreqFact
+        xp = (ow / (__XMPPlayer.soundBufferFrames / FreqFact) * i) + x
+        yp = MagFact * SQR((FFTr(i) * FFTr(i)) + (FFTi(i) * FFTi(i)))
+        IF yp > oh THEN yp = y - oh ELSE yp = y - yp
+        IF i = 0 THEN PSET (xp, yp), 10 ELSE LINE -(xp, yp), 10
+    NEXT
+    LINE (20, 48)-(620, 144), 7, B
     '-----
-    RFFT FFTr(), FFTi(), rSig(), ns
-    Line (20, 160)-(620, 272), 0, BF
-    Color 7: PrintString (184, 160), "Right Channel (Frequency spectrum)"
-    Color 2: PrintString (12, 160), Left$(Str$(SndRate \ ns), 6) + " [Hz]"
-    Color 2: PrintString (532, 160), Left$(Str$((ns& \ FreqFact) * SndRate \ ns), 6) + " [Hz]"
+    RFFT FFTr(), FFTi(), rSig()
+    COLOR 7: _PRINTSTRING (184, 160), "Right Channel (Frequency spectrum)"
+    COLOR 2: _PRINTSTRING (12, 160), LEFT$(STR$(_SNDRATE \ __XMPPlayer.soundBufferFrames), 6) + " [Hz]"
+    COLOR 2: _PRINTSTRING (532, 160), LEFT$(STR$((__XMPPlayer.soundBufferFrames \ FreqFact) * _SNDRATE \ __XMPPlayer.soundBufferFrames), 6) + " [Hz]"
     x = 22: y = 270 'origin
-    For i = 0 To ns \ FreqFact
-        xp = (ow / (ns / FreqFact) * i) + x
-        yp = MagFact * Sqr((FFTr(i) * FFTr(i)) + (FFTi(i) * FFTi(i)))
-        If yp > oh Then yp = y - oh Else yp = y - yp
-        If i = 0 Then PSet (xp, yp), 10 Else Line -(xp, yp), 10
-    Next
-    Line (20, 176)-(620, 272), 7, B
+    FOR i = 0 TO __XMPPlayer.soundBufferFrames \ FreqFact
+        xp = (ow / (__XMPPlayer.soundBufferFrames / FreqFact) * i) + x
+        yp = MagFact * SQR((FFTr(i) * FFTr(i)) + (FFTi(i) * FFTi(i)))
+        IF yp > oh THEN yp = y - oh ELSE yp = y - yp
+        IF i = 0 THEN PSET (xp, yp), 10 ELSE LINE -(xp, yp), 10
+    NEXT
+    LINE (20, 176)-(620, 272), 7, B
 
-    Return
-End Sub
+    RETURN
+END SUB
 
 
 ' Prints the welcome screen
-Sub PrintWelcomeScreen
-    Cls
-    Locate 1, 1
-    Color 12, 0
-    If Timer Mod 7 = 0 Then
-        Print "              _    _          ___    _                                     (+_+)"
-    ElseIf Timer Mod 13 = 0 Then
-        Print "              _    _          ___    _                                     (*_*)"
-    Else
-        Print "              _    _          ___    _                                     (ù_ù)"
-    End If
-    Print "             ( )  ( )/ \_/ \(   _ \ (_ )                                        "
-    Print "              \ \/ / |     ||  |_) ) |(|    _ _  _   _    __   _ __             "
-    Color 15
-    Print "               )  (  | (_) ||   __/  |()  / _  )( ) ( ) / __ \(  __)            "
-    Print "              / /\ \ | | | ||  |     | | ( (_| || (_) |(  ___/| |               "
-    Color 10
-    Print "_.___________( )  (_)(_) (_)( _)    ( (_) \(_ _) \__  | )\___)(()_____________._"
-    Print " |           /(                     (_)   (_)   ( )_| |(__)   (_)             | "
-    Print " |          (__)                                 \___/                        | "
-    Color 14
-    Print " |                                                                            | "
-    Print " |                                                                            | "
-    Print " |                     ";: Color 11: Print "ESC";: Color 8: Print " .................... ";: Color 13: Print "NEXT/QUIT";: Color 14: Print "                     | "
-    Print " |                     ";: Color 11: Print "SPC";: Color 8: Print " ........................ ";: Color 13: Print "PAUSE";: Color 14: Print "                     | "
-    Print " |                     ";: Color 11: Print "=|+";: Color 8: Print " .............. ";: Color 13: Print "INCREASE VOLUME";: Color 14: Print "                     | "
-    Print " |                     ";: Color 11: Print "-|_";: Color 8: Print " .............. ";: Color 13: Print "DECREASE VOLUME";: Color 14: Print "                     | "
-    Print " |                     ";: Color 11: Print "L|l";: Color 8: Print " ......................... ";: Color 13: Print "LOOP";: Color 14: Print "                     | "
-    Print " |                     ";: Color 11: Print "R|r";: Color 8: Print " .............. ";: Color 13: Print "REWIND TO START";: Color 14: Print "                     | "
-    Print " |                     ";: Color 11: Print "/";: Color 8: Print " .. ";: Color 13: Print "REWIND/FORWARD ONE POSITION";: Color 14: Print "                     | "
-    Print " |                     ";: Color 11: Print "O|o";: Color 8: Print " ....... ";: Color 13: Print "TOGGLE OSCILLATOR TYPE";: Color 14: Print "                     | "
-    Print " |                                                                            | "
-    Print " |                                                                            | "
-    Print " | ";: Color 9: Print "DRAG AND DROP MULTIPLE MOD FILES ON THIS WINDOW TO PLAY THEM SEQUENTIALLY.";: Color 14: Print " | "
-    Print " |                                                                            | "
-    Print " | ";: Color 9: Print "YOU CAN ALSO START THE PROGRAM WITH MULTIPLE FILES FROM THE COMMAND LINE.";: Color 14: Print "  | "
-    Print " |                                                                            | "
-    Print " |    ";: Color 9: Print "THIS WAS WRITTEN IN QB64 AND THE SOURCE CODE IS AVAILABLE ON GITHUB.";: Color 14: Print "    | "
-    Print " |                                                                            | "
-    Print " |                 ";: Color 9: Print "https://github.com/a740g/QB64-LibXMPLite";: Color 14: Print "                   | "
-    Print "_|_                                                                          _|_"
-    Print " `/__________________________________________________________________________\' ";
-End Sub
+SUB PrintWelcomeScreen
+    CONST STAR_COUNT = 512 ' the maximum stars that we can show
+
+    STATIC AS SINGLE starX(1 TO STAR_COUNT), starY(1 TO STAR_COUNT), starZ(1 TO STAR_COUNT)
+    STATIC AS LONG starC(1 TO STAR_COUNT)
+
+    CLS
+
+    DIM AS LONG i
+    FOR i = 1 TO STAR_COUNT
+        IF starX(i) < 1 OR starX(i) >= _WIDTH OR starY(i) < 1 OR starY(i) >= _HEIGHT THEN
+            starX(i) = RandomBetween(0, _WIDTH - 1)
+            starY(i) = RandomBetween(0, _HEIGHT - 1)
+            starZ(i) = 4096
+            starC(i) = RandomBetween(9, 15)
+        END IF
+
+        PSET (starX(i), starY(i)), starC(i)
+
+        starZ(i) = starZ(i) + 0.1!
+        starX(i) = ((starX(i) - (_WIDTH / 2)) * (starZ(i) / 4096)) + (_WIDTH / 2)
+        starY(i) = ((starY(i) - (_HEIGHT / 2)) * (starZ(i) / 4096)) + (_HEIGHT / 2)
+    NEXT
+
+    LOCATE 1, 1
+    COLOR 12, 0
+    IF TIMER MOD 7 = 0 THEN
+        PRINT "              _    _          ___    _                                     (+_+)"
+    ELSEIF TIMER MOD 13 = 0 THEN
+        PRINT "              _    _          ___    _                                     (*_*)"
+    ELSE
+        PRINT "              _    _          ___    _                                     (ù_ù)"
+    END IF
+    PRINT "             ( )  ( )/ \_/ \(   _ \ (_ )                                        "
+    PRINT "              \ \/ / |     ||  |_) ) |(|    _ _  _   _    __   _ __             "
+    COLOR 15
+    PRINT "               )  (  | (_) ||   __/  |()  / _  )( ) ( ) / __ \(  __)            "
+    PRINT "              / /\ \ | | | ||  |     | | ( (_| || (_) |(  ___/| |               "
+    COLOR 10
+    PRINT "_.___________( )  (_)(_) (_)( _)    ( (_) \(_ _) \__  | )\___)(()_____________._"
+    PRINT " |           /(                     (_)   (_)   ( )_| |(__)   (_)             | "
+    PRINT " |          (__)                                 \___/                        | "
+    COLOR 14
+    PRINT " |                                                                            | "
+    PRINT " |                     ";: COLOR 11: PRINT "F1";: COLOR 8: PRINT " ............ ";: COLOR 13: PRINT "MULTI-SELECT FILES";: COLOR 14: PRINT "                     | "
+    PRINT " |                     ";: COLOR 11: PRINT "ESC";: COLOR 8: PRINT " .................... ";: COLOR 13: PRINT "NEXT/QUIT";: COLOR 14: PRINT "                     | "
+    PRINT " |                     ";: COLOR 11: PRINT "SPC";: COLOR 8: PRINT " ........................ ";: COLOR 13: PRINT "PAUSE";: COLOR 14: PRINT "                     | "
+    PRINT " |                     ";: COLOR 11: PRINT "=|+";: COLOR 8: PRINT " .............. ";: COLOR 13: PRINT "INCREASE VOLUME";: COLOR 14: PRINT "                     | "
+    PRINT " |                     ";: COLOR 11: PRINT "-|_";: COLOR 8: PRINT " .............. ";: COLOR 13: PRINT "DECREASE VOLUME";: COLOR 14: PRINT "                     | "
+    PRINT " |                     ";: COLOR 11: PRINT "L|l";: COLOR 8: PRINT " ......................... ";: COLOR 13: PRINT "LOOP";: COLOR 14: PRINT "                     | "
+    PRINT " |                     ";: COLOR 11: PRINT "R|r";: COLOR 8: PRINT " .............. ";: COLOR 13: PRINT "REWIND TO START";: COLOR 14: PRINT "                     | "
+    PRINT " |                     ";: COLOR 11: PRINT "/";: COLOR 8: PRINT " .. ";: COLOR 13: PRINT "REWIND/FORWARD ONE POSITION";: COLOR 14: PRINT "                     | "
+    PRINT " |                     ";: COLOR 11: PRINT "O|o";: COLOR 8: PRINT " ....... ";: COLOR 13: PRINT "TOGGLE OSCILLATOR TYPE";: COLOR 14: PRINT "                     | "
+    PRINT " |                                                                            | "
+    PRINT " |                                                                            | "
+    PRINT " | ";: COLOR 9: PRINT "DRAG AND DROP MULTIPLE MOD FILES ON THIS WINDOW TO PLAY THEM SEQUENTIALLY.";: COLOR 14: PRINT " | "
+    PRINT " |                                                                            | "
+    PRINT " | ";: COLOR 9: PRINT "YOU CAN ALSO START THE PROGRAM WITH MULTIPLE FILES FROM THE COMMAND LINE.";: COLOR 14: PRINT "  | "
+    PRINT " |                                                                            | "
+    PRINT " |    ";: COLOR 9: PRINT "THIS WAS WRITTEN IN QB64 AND THE SOURCE CODE IS AVAILABLE ON GITHUB.";: COLOR 14: PRINT "    | "
+    PRINT " |                                                                            | "
+    PRINT " |                 ";: COLOR 9: PRINT "https://github.com/a740g/QB64-LibXMPLite";: COLOR 14: PRINT "                   | "
+    PRINT "_|_                                                                          _|_"
+    PRINT " `/__________________________________________________________________________\' ";
+
+    _DISPLAY
+END SUB
 
 
 ' Processes the command line one file at a time
-Sub ProcessCommandLine
-    Dim i As Unsigned Long
+SUB ProcessCommandLine
+    DIM i AS _UNSIGNED LONG
 
-    For i = 1 To CommandCount
-        PlaySong Command$(i)
-        If TotalDroppedFiles > 0 Then Exit For ' Exit the loop if we have dropped files
-    Next
-End Sub
+    FOR i = 1 TO _COMMANDCOUNT
+        PlaySong COMMAND$(i)
+        IF _TOTALDROPPEDFILES > 0 THEN EXIT FOR ' Exit the loop if we have dropped files
+    NEXT
+END SUB
 
 
 ' Processes dropped files one file at a time
-Sub ProcessDroppedFiles
-    If TotalDroppedFiles > 0 Then
+SUB ProcessDroppedFiles
+    IF _TOTALDROPPEDFILES > 0 THEN
         ' Make a copy of the dropped file and clear the list
-        ReDim fileNames(1 To TotalDroppedFiles) As String
-        Dim i As Unsigned Long
+        REDIM fileNames(1 TO _TOTALDROPPEDFILES) AS STRING
+        DIM i AS _UNSIGNED LONG
 
-        For i = 1 To TotalDroppedFiles
-            fileNames(i) = DroppedFile(i)
-        Next
-        FinishDrop ' This is critical
+        FOR i = 1 TO _TOTALDROPPEDFILES
+            fileNames(i) = _DROPPEDFILE(i)
+        NEXT
+        _FINISHDROP ' This is critical
 
         ' Now play the dropped file one at a time
-        For i = LBound(fileNames) To UBound(fileNames)
+        FOR i = LBOUND(fileNames) TO UBOUND(fileNames)
             PlaySong fileNames(i)
-            If TotalDroppedFiles > 0 Then Exit For ' Exit the loop if we have dropped files
-        Next
-    End If
-End Sub
+            IF _TOTALDROPPEDFILES > 0 THEN EXIT FOR ' exit the loop if we have dropped files
+        NEXT
+    END IF
+END SUB
+
+
+' Processes a list of files selected by the user
+SUB ProcessSelectedFiles
+    DIM ofdList AS STRING: ofdList = _OPENFILEDIALOG$(APP_NAME, , "*.*", "All files", NOT 0) ' NOT 0 = -1 XD
+
+    IF ofdList = "" THEN EXIT SUB
+
+    REDIM fileNames(0 TO 0) AS STRING
+    DIM AS LONG i, j
+
+    j = ParseOpenFileDialogList(ofdList, fileNames())
+
+    FOR i = 0 TO j - 1
+        PlaySong fileNames(i)
+        IF _TOTALDROPPEDFILES > 0 THEN EXIT FOR ' exit the loop if we have dropped files
+    NEXT
+END SUB
 
 
 ' Gets the filename portion from a file path
-Function GetFileNameFromPath$ (pathName As String)
-    Dim i As Unsigned Long
+FUNCTION GetFileNameFromPath$ (pathName AS STRING)
+    DIM i AS _UNSIGNED LONG
 
     ' Retrieve the position of the first / or \ in the parameter from the
-    For i = Len(pathName) To 1 Step -1
-        If Asc(pathName, i) = 47 Or Asc(pathName, i) = 92 Then Exit For
-    Next
+    FOR i = LEN(pathName) TO 1 STEP -1
+        IF ASC(pathName, i) = 47 OR ASC(pathName, i) = 92 THEN EXIT FOR
+    NEXT
 
     ' Return the full string if pathsep was not found
-    If i = 0 Then
+    IF i = 0 THEN
         GetFileNameFromPath = pathName
-    Else
-        GetFileNameFromPath = Right$(pathName, Len(pathName) - i)
-    End If
-End Function
+    ELSE
+        GetFileNameFromPath = RIGHT$(pathName, LEN(pathName) - i)
+    END IF
+END FUNCTION
+
+
+' This is a simple text parser that can take an input string from OpenFileDialog$ and spit out discrete filepaths in an array
+' Returns the number of strings parsed
+FUNCTION ParseOpenFileDialogList& (ofdList AS STRING, ofdArray() AS STRING)
+    DIM AS LONG p, c
+    DIM ts AS STRING
+
+    REDIM ofdArray(0 TO 0) AS STRING
+    ts = ofdList
+
+    DO
+        p = INSTR(ts, "|")
+
+        IF p = 0 THEN
+            ofdArray(c) = ts
+
+            ParseOpenFileDialogList& = c + 1
+            EXIT FUNCTION
+        END IF
+
+        ofdArray(c) = LEFT$(ts, p - 1)
+        ts = MID$(ts, p + 1)
+
+        c = c + 1
+        REDIM _PRESERVE ofdArray(0 TO c) AS STRING
+    LOOP
+END FUNCTION
+
+
+' Loads a whole file from a URL into memory
+FUNCTION LoadFileFromURL$ (url AS STRING)
+    DIM h AS LONG: h = _OPENCLIENT("HTTP:" + url)
+
+    IF h <> 0 THEN
+        DIM AS STRING content, buffer
+
+        WHILE NOT EOF(h)
+            _LIMIT FRAME_RATE_MAX
+            GET h, , buffer
+            content = content + buffer
+        WEND
+
+        CLOSE h
+
+        LoadFileFromURL = content
+    END IF
+END FUNCTION
 
 
 ' Gets a string form of the boolean value passed
-Function BoolToStr$ (expression As Long, style As Unsigned Byte)
-    Select Case style
-        Case 1
-            If expression Then BoolToStr = "On" Else BoolToStr = "Off"
-        Case 2
-            If expression Then BoolToStr = "Enabled" Else BoolToStr = "Disabled"
-        Case 3
-            If expression Then BoolToStr = "1" Else BoolToStr = "0"
-        Case Else
-            If expression Then BoolToStr = "True" Else BoolToStr = "False"
-    End Select
-End Function
+FUNCTION BoolToStr$ (expression AS LONG, style AS _UNSIGNED _BYTE)
+    SELECT CASE style
+        CASE 1
+            IF expression THEN BoolToStr = "On" ELSE BoolToStr = "Off"
+        CASE 2
+            IF expression THEN BoolToStr = "Enabled" ELSE BoolToStr = "Disabled"
+        CASE 3
+            IF expression THEN BoolToStr = "1" ELSE BoolToStr = "0"
+        CASE ELSE
+            IF expression THEN BoolToStr = "True" ELSE BoolToStr = "False"
+    END SELECT
+END FUNCTION
+
+
+' Generates a random number between lo & hi
+FUNCTION RandomBetween& (lo AS LONG, hi AS LONG)
+    RandomBetween = lo + RND * (hi - lo)
+END FUNCTION
 
 
 ' Vince's FFT routine - https://qb64phoenix.com/forum/showthread.php?tid=270&pid=2005#pid2005
-' Modified for efficiency and performance
-Sub RFFT (xx_r() As Single, xx_i() As Single, x_r() As Single, n As Long)
-    Dim As Single w_r, w_i, wm_r, wm_i, u_r, u_i, v_r, v_i, xpr, xpi, xmr, xmi
-    Dim As Long log2n, rev, i, j, k, m, p, q
+' Modified for efficiency and performance (a little). All arrays passed must be zero based
+SUB RFFT (out_r() AS SINGLE, out_i() AS SINGLE, in_r() AS SINGLE)
+    DIM AS SINGLE w_r, w_i, wm_r, wm_i, u_r, u_i, v_r, v_i, xpr, xpi, xmr, xmi, pi_m
+    DIM AS LONG log2n, rev, i, j, k, m, p, q
+    DIM AS LONG n, half_n
 
-    log2n = Log(n \ 2) / Log(2)
+    n = UBOUND(in_r) + 1
+    half_n = n \ 2
+    log2n = LOG(half_n) / LOG(2)
 
-    For i = 0 To n \ 2 - 1
+    FOR i = 0 TO half_n - 1
         rev = 0
-        For j = 0 To log2n - 1
-            If i And (2 ^ j) Then rev = rev + (2 ^ (log2n - 1 - j))
-        Next
+        FOR j = 0 TO log2n - 1
+            IF i AND (2 ^ j) THEN rev = rev + (2 ^ (log2n - 1 - j))
+        NEXT
 
-        xx_r(i) = x_r(2 * rev)
-        xx_i(i) = x_r(2 * rev + 1)
-    Next
+        out_r(i) = in_r(2 * rev)
+        out_i(i) = in_r(2 * rev + 1)
+    NEXT
 
-    For i = 1 To log2n
+    FOR i = 1 TO log2n
         m = 2 ^ i
-        wm_r = Cos(-2 * Pi / m)
-        wm_i = Sin(-2 * Pi / m)
+        pi_m = _PI(-2 / m)
+        wm_r = COS(pi_m)
+        wm_i = SIN(pi_m)
 
-        For j = 0 To n \ 2 - 1 Step m
+        FOR j = 0 TO half_n - 1 STEP m
             w_r = 1
             w_i = 0
 
-            For k = 0 To m \ 2 - 1
+            FOR k = 0 TO m \ 2 - 1
                 p = j + k
                 q = p + (m \ 2)
 
-                u_r = w_r * xx_r(q) - w_i * xx_i(q)
-                u_i = w_r * xx_i(q) + w_i * xx_r(q)
-                v_r = xx_r(p)
-                v_i = xx_i(p)
+                u_r = w_r * out_r(q) - w_i * out_i(q)
+                u_i = w_r * out_i(q) + w_i * out_r(q)
+                v_r = out_r(p)
+                v_i = out_i(p)
 
-                xx_r(p) = v_r + u_r
-                xx_i(p) = v_i + u_i
-                xx_r(q) = v_r - u_r
-                xx_i(q) = v_i - u_i
+                out_r(p) = v_r + u_r
+                out_i(p) = v_i + u_i
+                out_r(q) = v_r - u_r
+                out_i(q) = v_i - u_i
 
                 u_r = w_r
                 u_i = w_i
                 w_r = u_r * wm_r - u_i * wm_i
                 w_i = u_r * wm_i + u_i * wm_r
-            Next
-        Next
-    Next
+            NEXT
+        NEXT
+    NEXT
 
-    xx_r(n \ 2) = xx_r(0)
-    xx_i(n \ 2) = xx_i(0)
+    out_r(half_n) = out_r(0)
+    out_i(half_n) = out_i(0)
 
-    For i = 1 To n \ 2 - 1
-        xx_r(n \ 2 + i) = xx_r(n \ 2 - i)
-        xx_i(n \ 2 + i) = xx_i(n \ 2 - i)
-    Next
+    FOR i = 1 TO half_n - 1
+        out_r(half_n + i) = out_r(half_n - i)
+        out_i(half_n + i) = out_i(half_n - i)
+    NEXT
 
-    For i = 0 To n \ 2 - 1
-        xpr = (xx_r(i) + xx_r(n \ 2 + i)) / 2
-        xpi = (xx_i(i) + xx_i(n \ 2 + i)) / 2
+    FOR i = 0 TO half_n - 1
+        xpr = (out_r(i) + out_r(half_n + i)) * 0.5!
+        xpi = (out_i(i) + out_i(half_n + i)) * 0.5!
 
-        xmr = (xx_r(i) - xx_r(n \ 2 + i)) / 2
-        xmi = (xx_i(i) - xx_i(n \ 2 + i)) / 2
+        xmr = (out_r(i) - out_r(half_n + i)) * 0.5!
+        xmi = (out_i(i) - out_i(half_n + i)) * 0.5!
 
-        xx_r(i) = xpr + xpi * Cos(2 * Pi * i / n) - xmr * Sin(2 * Pi * i / n)
-        xx_i(i) = xmi - xpi * Sin(2 * Pi * i / n) - xmr * Cos(2 * Pi * i / n)
-    Next
+        pi_m = _PI(2 * i / n)
+        out_r(i) = xpr + xpi * COS(pi_m) - xmr * SIN(pi_m)
+        out_i(i) = xmi - xpi * SIN(pi_m) - xmr * COS(pi_m)
+    NEXT
 
-    ' symmetry, complex conj
-    For i = 0 To n \ 2 - 1
-        xx_r(n \ 2 + i) = xx_r(n \ 2 - 1 - i)
-        xx_i(n \ 2 + i) = -xx_i(n \ 2 - 1 - i)
-    Next
-End Sub
-'-----------------------------------------------------------------------------------------------------
+    FOR i = 0 TO half_n - 1
+        out_r(half_n + i) = out_r(half_n - 1 - i)
+        out_i(half_n + i) = -out_i(half_n - 1 - i)
+    NEXT
+END SUB
+'-----------------------------------------------------------------------------------------------------------------------
 
-'-----------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
 ' MODULE FILES
-'-----------------------------------------------------------------------------------------------------
-'$Include:'./LibXMPLite.bas'
-'-----------------------------------------------------------------------------------------------------
-'-----------------------------------------------------------------------------------------------------
-
+'-----------------------------------------------------------------------------------------------------------------------
+'$INCLUDE:'Libxmp64.bas'
+'-----------------------------------------------------------------------------------------------------------------------
+'-----------------------------------------------------------------------------------------------------------------------
