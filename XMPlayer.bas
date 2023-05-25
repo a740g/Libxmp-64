@@ -88,7 +88,7 @@ DIM k AS LONG
 
 ' Main loop
 DO
-    XMP_Update XMP_SOUND_BUFFER_TIME_DEFAULT ' only here for the into music, otherwise does nothing
+    XMP_Update XMP_SOUND_BUFFER_TIME_DEFAULT ' only here in the main loop for the intro music, otherwise does nothing
 
     ProcessDroppedFiles
 

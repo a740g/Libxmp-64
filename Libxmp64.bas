@@ -16,19 +16,16 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
     '-------------------------------------------------------------------------------------------------------------------
     ' FUNCTIONS & SUBROUTINES
     '-------------------------------------------------------------------------------------------------------------------
-    ' Rounds a number down to a power of 2 the noobie way :)
-    FUNCTION __XMP_RoundDownToPowerOf2~& (n AS _UNSIGNED LONG)
-        IF (n AND (n - 1)) = 0 THEN
-            __XMP_RoundDownToPowerOf2 = n ' the number is already a power of 2, no rounding needed
-            EXIT FUNCTION
-        END IF
-
-        DIM power AS _UNSIGNED LONG: power = 1
-        WHILE power < n
-            power = power * 2
-        WEND
-
-        __XMP_RoundDownToPowerOf2 = power \ 2
+    ' Rounds a number down to a power of 2 (this time the non-noobie way :)
+    FUNCTION __XMP_RoundDownToPowerOf2~& (i AS _UNSIGNED LONG)
+        DIM j AS _UNSIGNED LONG
+        j = i
+        j = j OR _SHR(j, 1)
+        j = j OR _SHR(j, 2)
+        j = j OR _SHR(j, 4)
+        j = j OR _SHR(j, 8)
+        j = j OR _SHR(j, 16)
+        __XMP_RoundDownToPowerOf2 = j - _SHR(j, 1)
     END FUNCTION
 
 
