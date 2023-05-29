@@ -11,61 +11,61 @@
 '$INCLUDE:'Libxmp64.bi'
 '-----------------------------------------------------------------------------------------------------------------------
 
-$IF LIBXMP64_BAS = UNDEFINED THEN
-    $LET LIBXMP64_BAS = TRUE
+$If LIBXMP64_BAS = UNDEFINED Then
+    $Let LIBXMP64_BAS = TRUE
     '-------------------------------------------------------------------------------------------------------------------
     ' FUNCTIONS & SUBROUTINES
     '-------------------------------------------------------------------------------------------------------------------
     ' Rounds a number down to a power of 2 (this time the non-noobie way :)
-    FUNCTION __XMP_RoundDownToPowerOf2~& (i AS _UNSIGNED LONG)
-        DIM j AS _UNSIGNED LONG
+    Function __XMP_RoundDownToPowerOf2~& (i As _Unsigned Long)
+        Dim j As _Unsigned Long
         j = i
-        j = j OR _SHR(j, 1)
-        j = j OR _SHR(j, 2)
-        j = j OR _SHR(j, 4)
-        j = j OR _SHR(j, 8)
-        j = j OR _SHR(j, 16)
-        __XMP_RoundDownToPowerOf2 = j - _SHR(j, 1)
-    END FUNCTION
+        j = j Or _ShR(j, 1)
+        j = j Or _ShR(j, 2)
+        j = j Or _ShR(j, 4)
+        j = j Or _ShR(j, 8)
+        j = j Or _ShR(j, 16)
+        __XMP_RoundDownToPowerOf2 = j - _ShR(j, 1)
+    End Function
 
 
     ' This an internal fuction and should be called right after the module is loaded
     ' These are things that are common after loading a module
-    FUNCTION __XMP_DoPostInit%%
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Function __XMP_DoPostInit%%
+        Shared __XMPPlayer As __XMPPlayerType
 
         ' Exit if module loading failed
-        IF __XMPPlayer.errorCode <> 0 THEN
+        If __XMPPlayer.errorCode <> 0 Then
             ' Free the context
             xmp_free_context __XMPPlayer.context
             __XMPPlayer.context = 0
-            EXIT FUNCTION
-        END IF
+            Exit Function
+        End If
 
         ' Initialize the player
-        __XMPPlayer.errorCode = xmp_start_player(__XMPPlayer.context, _SNDRATE, 0)
+        __XMPPlayer.errorCode = xmp_start_player(__XMPPlayer.context, _SndRate, 0)
 
         ' Exit if starting player failed
-        IF __XMPPlayer.errorCode <> 0 THEN
+        If __XMPPlayer.errorCode <> 0 Then
             xmp_release_module __XMPPlayer.context
             xmp_free_context __XMPPlayer.context
             __XMPPlayer.context = 0
-            EXIT FUNCTION
-        END IF
+            Exit Function
+        End If
 
         ' Allocate the mixer buffer
-        __XMPPlayer.soundBufferFrames = __XMP_RoundDownToPowerOf2(_SNDRATE * 0.04) ' 40 ms buffer round down to power of 2
+        __XMPPlayer.soundBufferFrames = __XMP_RoundDownToPowerOf2(_SndRate * 0.04) ' 40 ms buffer round down to power of 2
         __XMPPlayer.soundBufferBytes = __XMPPlayer.soundBufferFrames * XMP_SOUND_BUFFER_FRAME_SIZE ' power of 2 above is required by most FFT functions
-        __XMPPlayer.soundBuffer = _MEMNEW(__XMPPlayer.soundBufferBytes)
+        __XMPPlayer.soundBuffer = _MemNew(__XMPPlayer.soundBufferBytes)
 
         ' Exit if memory was not allocated
-        IF __XMPPlayer.soundBuffer.SIZE = 0 THEN
+        If __XMPPlayer.soundBuffer.SIZE = 0 Then
             xmp_end_player __XMPPlayer.context
             xmp_release_module __XMPPlayer.context
             xmp_free_context __XMPPlayer.context
             __XMPPlayer.context = 0
-            EXIT FUNCTION
-        END IF
+            Exit Function
+        End If
 
         ' Set some player properties
         ' These makes the sound quality much better when devices have sample rates other than 44100
@@ -73,17 +73,17 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
         __XMPPlayer.errorCode = xmp_set_player(__XMPPlayer.context, XMP_PLAYER_DSP, XMP_DSP_ALL)
 
         ' Allocate a sound pipe
-        __XMPPlayer.soundHandle = _SNDOPENRAW
+        __XMPPlayer.soundHandle = _SndOpenRaw
 
         ' Exit if failed to allocate sound handle
-        IF __XMPPlayer.soundHandle < 1 THEN
-            _MEMFREE __XMPPlayer.soundBuffer
+        If __XMPPlayer.soundHandle < 1 Then
+            _MemFree __XMPPlayer.soundBuffer
             xmp_end_player __XMPPlayer.context
             xmp_release_module __XMPPlayer.context
             xmp_free_context __XMPPlayer.context
             __XMPPlayer.context = 0
-            EXIT FUNCTION
-        END IF
+            Exit Function
+        End If
 
         ' Get the frame information
         xmp_get_frame_info __XMPPlayer.context, __XMPPlayer.frameInfo
@@ -94,160 +94,160 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
         __XMPPlayer.isPaused = __XMPPlayer.context <> 0 ' true
 
         __XMP_DoPostInit = __XMPPlayer.context <> 0 ' true
-    END FUNCTION
+    End Function
 
 
     ' Loads the MOD tune from a file and prepares all required gobals
-    FUNCTION XMP_LoadTuneFromFile%% (fileName AS STRING)
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Function XMP_LoadTuneFromFile%% (fileName As String)
+        Shared __XMPPlayer As __XMPPlayerType
 
         ' Check if the file exists
-        IF NOT _FILEEXISTS(fileName) THEN EXIT FUNCTION
+        If Not _FileExists(fileName) Then Exit Function
 
         ' If a song is already loaded then unload and free resources
-        IF __XMPPlayer.context <> 0 THEN XMP_Stop
+        If __XMPPlayer.context <> 0 Then XMP_Stop
 
         ' Check if the file is a valid module music
-        __XMPPlayer.errorCode = xmp_test_module(fileName + CHR$(0), __XMPPlayer.testInfo)
-        IF __XMPPlayer.errorCode <> 0 THEN EXIT FUNCTION
+        __XMPPlayer.errorCode = xmp_test_module(fileName + Chr$(0), __XMPPlayer.testInfo)
+        If __XMPPlayer.errorCode <> 0 Then Exit Function
 
         ' Initialize the player
         __XMPPlayer.context = xmp_create_context
 
         ' Exit if context creation failed
-        IF __XMPPlayer.context = 0 THEN EXIT FUNCTION
+        If __XMPPlayer.context = 0 Then Exit Function
 
         ' Load the module file
-        __XMPPlayer.errorCode = xmp_load_module(__XMPPlayer.context, fileName + CHR$(0))
+        __XMPPlayer.errorCode = xmp_load_module(__XMPPlayer.context, fileName + Chr$(0))
 
         XMP_LoadTuneFromFile = __XMP_DoPostInit
-    END FUNCTION
+    End Function
 
 
     ' Loads the MOD tune from a memory and prepares all required gobals
-    FUNCTION XMP_LoadTuneFromMemory%% (buffer AS STRING)
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Function XMP_LoadTuneFromMemory%% (buffer As String)
+        Shared __XMPPlayer As __XMPPlayerType
         ' Check if the buffer is empty
-        IF LEN(buffer) = 0 THEN EXIT FUNCTION
+        If Len(buffer) = 0 Then Exit Function
 
         ' If a song is already loaded then unload and free resources
-        IF __XMPPlayer.context <> 0 THEN XMP_Stop
+        If __XMPPlayer.context <> 0 Then XMP_Stop
 
         ' Check if the file is a valid module music
-        __XMPPlayer.errorCode = xmp_test_module_from_memory(buffer, LEN(buffer), __XMPPlayer.testInfo)
-        IF __XMPPlayer.errorCode <> 0 THEN EXIT FUNCTION
+        __XMPPlayer.errorCode = xmp_test_module_from_memory(buffer, Len(buffer), __XMPPlayer.testInfo)
+        If __XMPPlayer.errorCode <> 0 Then Exit Function
 
         ' Initialize the player
         __XMPPlayer.context = xmp_create_context
 
         ' Exit if context creation failed
-        IF __XMPPlayer.context = 0 THEN EXIT FUNCTION
+        If __XMPPlayer.context = 0 Then Exit Function
 
         ' Load the module file
-        __XMPPlayer.errorCode = xmp_load_module_from_memory(__XMPPlayer.context, buffer, LEN(buffer))
+        __XMPPlayer.errorCode = xmp_load_module_from_memory(__XMPPlayer.context, buffer, Len(buffer))
 
         XMP_LoadTuneFromMemory = __XMP_DoPostInit
-    END FUNCTION
+    End Function
 
 
     ' Kickstarts playback
-    SUB XMP_Play
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Sub XMP_Play
+        Shared __XMPPlayer As __XMPPlayerType
 
-        IF __XMPPlayer.context <> 0 THEN
+        If __XMPPlayer.context <> 0 Then
             __XMPPlayer.isPaused = 0 ' false
             __XMPPlayer.isPlaying = (__XMPPlayer.context <> 0) ' true
-        END IF
-    END SUB
+        End If
+    End Sub
 
 
     ' Stops the player and frees all allocated resources
-    SUB XMP_Stop
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Sub XMP_Stop
+        Shared __XMPPlayer As __XMPPlayerType
 
         ' Free the player and loaded module
-        IF __XMPPlayer.context <> 0 THEN
+        If __XMPPlayer.context <> 0 Then
             ' Set default player state
             __XMPPlayer.isPlaying = 0
             __XMPPlayer.isLooping = 0
             __XMPPlayer.isPaused = __XMPPlayer.context <> 0 ' true
 
             ' Free the sound pipe
-            _SNDRAWDONE __XMPPlayer.soundHandle ' Sumbit whatever is remaining in the raw buffer for playback
-            _SNDCLOSE __XMPPlayer.soundHandle ' Close QB64 sound pipe
+            _SndRawDone __XMPPlayer.soundHandle ' Sumbit whatever is remaining in the raw buffer for playback
+            _SndClose __XMPPlayer.soundHandle ' Close QB64 sound pipe
 
             ' Free the mixer buffer
-            _MEMFREE __XMPPlayer.soundBuffer
+            _MemFree __XMPPlayer.soundBuffer
 
             ' Cleanup XMP
             xmp_end_player __XMPPlayer.context
             xmp_release_module __XMPPlayer.context
             xmp_free_context __XMPPlayer.context
             __XMPPlayer.context = 0
-        END IF
-    END SUB
+        End If
+    End Sub
 
 
     ' Restarts playback
-    SUB XMP_Replay
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Sub XMP_Replay
+        Shared __XMPPlayer As __XMPPlayerType
 
-        IF __XMPPlayer.context <> 0 AND __XMPPlayer.isPlaying AND NOT __XMPPlayer.isPaused THEN
+        If __XMPPlayer.context <> 0 And __XMPPlayer.isPlaying And Not __XMPPlayer.isPaused Then
             xmp_restart_module __XMPPlayer.context
-        END IF
-    END SUB
+        End If
+    End Sub
 
 
     ' Jumps to the next position
-    SUB XMP_GoToNextPosition
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Sub XMP_GoToNextPosition
+        Shared __XMPPlayer As __XMPPlayerType
 
-        IF __XMPPlayer.context <> 0 AND __XMPPlayer.isPlaying AND NOT __XMPPlayer.isPaused THEN
+        If __XMPPlayer.context <> 0 And __XMPPlayer.isPlaying And Not __XMPPlayer.isPaused Then
             __XMPPlayer.errorCode = xmp_next_position&(__XMPPlayer.context)
-        END IF
-    END SUB
+        End If
+    End Sub
 
 
     ' Jumps to the previous position
-    SUB XMP_GoToPreviousPosition
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Sub XMP_GoToPreviousPosition
+        Shared __XMPPlayer As __XMPPlayerType
 
-        IF __XMPPlayer.context <> 0 AND __XMPPlayer.isPlaying AND NOT __XMPPlayer.isPaused THEN
+        If __XMPPlayer.context <> 0 And __XMPPlayer.isPlaying And Not __XMPPlayer.isPaused Then
             __XMPPlayer.errorCode = xmp_prev_position&(__XMPPlayer.context)
-        END IF
-    END SUB
+        End If
+    End Sub
 
 
     ' Just to a specific position
-    SUB XMP_SetPosition (position AS LONG)
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Sub XMP_SetPosition (position As Long)
+        Shared __XMPPlayer As __XMPPlayerType
 
-        IF __XMPPlayer.context <> 0 AND __XMPPlayer.isPlaying AND NOT __XMPPlayer.isPaused THEN
+        If __XMPPlayer.context <> 0 And __XMPPlayer.isPlaying And Not __XMPPlayer.isPaused Then
             __XMPPlayer.errorCode = xmp_set_position&(__XMPPlayer.context, position)
-        END IF
-    END SUB
+        End If
+    End Sub
 
 
     ' Just to a specific time
-    SUB XMP_SeekToTime (timeMs AS LONG)
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Sub XMP_SeekToTime (timeMs As Long)
+        Shared __XMPPlayer As __XMPPlayerType
 
-        IF __XMPPlayer.context <> 0 AND __XMPPlayer.isPlaying AND NOT __XMPPlayer.isPaused THEN
+        If __XMPPlayer.context <> 0 And __XMPPlayer.isPlaying And Not __XMPPlayer.isPaused Then
             __XMPPlayer.errorCode = xmp_seek_time&(__XMPPlayer.context, timeMs)
-        END IF
-    END SUB
+        End If
+    End Sub
 
 
     ' This handles playback and keeping track of the render buffer
     ' You can call this as frequenctly as you want. The routine will simply exit if nothing is to be done
-    SUB XMP_Update (bufferTimeSecs AS SINGLE)
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Sub XMP_Update (bufferTimeSecs As Single)
+        Shared __XMPPlayer As __XMPPlayerType
 
         ' If song is done, paused or we already have enough samples to play then exit
-        IF __XMPPlayer.context = 0 OR NOT __XMPPlayer.isPlaying OR __XMPPlayer.isPaused OR _SNDRAWLEN(__XMPPlayer.soundHandle) > bufferTimeSecs THEN EXIT SUB
+        If __XMPPlayer.context = 0 Or Not __XMPPlayer.isPlaying Or __XMPPlayer.isPaused Or _SndRawLen(__XMPPlayer.soundHandle) > bufferTimeSecs Then Exit Sub
 
         ' Clear the render buffer
-        _MEMFILL __XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET, __XMPPlayer.soundBufferBytes, 0 AS _BYTE
+        _MemFill __XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET, __XMPPlayer.soundBufferBytes, 0 As _BYTE
 
         ' Render some samples to the buffer
         __XMPPlayer.errorCode = xmp_play_buffer(__XMPPlayer.context, __XMPPlayer.soundBuffer.OFFSET, __XMPPlayer.soundBufferBytes, 0)
@@ -256,96 +256,96 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
         xmp_get_frame_info __XMPPlayer.context, __XMPPlayer.frameInfo
 
         ' Set playing flag to false if we are not looping and loop count > 0
-        IF __XMPPlayer.isLooping THEN
+        If __XMPPlayer.isLooping Then
             __XMPPlayer.isPlaying = __XMPPlayer.isLooping
-        ELSE
+        Else
             __XMPPlayer.isPlaying = (__XMPPlayer.frameInfo.loop_count < 1)
             ' Exit before any samples are queued
-            IF NOT __XMPPlayer.isPlaying THEN EXIT SUB
-        END IF
+            If Not __XMPPlayer.isPlaying Then Exit Sub
+        End If
 
         ' Push the samples to the sound pipe
-        DIM i AS _UNSIGNED LONG
-        FOR i = 0 TO __XMPPlayer.soundBufferBytes - XMP_SOUND_BUFFER_SAMPLE_SIZE STEP XMP_SOUND_BUFFER_FRAME_SIZE
-            _SNDRAW _MEMGET(__XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET + i, INTEGER) / 32768!, _MEMGET(__XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_SAMPLE_SIZE, INTEGER) / 32768!, __XMPPlayer.soundHandle
-        NEXT
-    END SUB
+        Dim i As _Unsigned Long
+        For i = 0 To __XMPPlayer.soundBufferBytes - XMP_SOUND_BUFFER_SAMPLE_SIZE Step XMP_SOUND_BUFFER_FRAME_SIZE
+            _SndRaw _MemGet(__XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET + i, Integer) / 32768!, _MemGet(__XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_SAMPLE_SIZE, Integer) / 32768!, __XMPPlayer.soundHandle
+        Next
+    End Sub
 
 
     ' Sets the master volume (0 - 100)
-    SUB XMP_SetVolume (volume AS LONG)
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Sub XMP_SetVolume (volume As Long)
+        Shared __XMPPlayer As __XMPPlayerType
 
-        IF __XMPPlayer.context <> 0 AND __XMPPlayer.isPlaying THEN
-            IF volume < 0 THEN
+        If __XMPPlayer.context <> 0 And __XMPPlayer.isPlaying Then
+            If volume < 0 Then
                 __XMPPlayer.errorCode = xmp_set_player(__XMPPlayer.context, XMP_PLAYER_VOLUME, 0)
-            ELSEIF volume > 100 THEN
+            ElseIf volume > 100 Then
                 __XMPPlayer.errorCode = xmp_set_player(__XMPPlayer.context, XMP_PLAYER_VOLUME, 100)
-            ELSE
+            Else
                 __XMPPlayer.errorCode = xmp_set_player(__XMPPlayer.context, XMP_PLAYER_VOLUME, volume)
-            END IF
-        END IF
-    END SUB
+            End If
+        End If
+    End Sub
 
 
     ' Gets the master volume
-    FUNCTION XMP_GetVolume&
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Function XMP_GetVolume&
+        Shared __XMPPlayer As __XMPPlayerType
 
-        IF __XMPPlayer.context <> 0 AND __XMPPlayer.isPlaying THEN
+        If __XMPPlayer.context <> 0 And __XMPPlayer.isPlaying Then
             XMP_GetVolume = xmp_get_player(__XMPPlayer.context, XMP_PLAYER_VOLUME)
-        END IF
-    END FUNCTION
+        End If
+    End Function
 
 
     ' Pauses / unpauses playback
-    SUB XMP_Pause (state AS _BYTE)
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Sub XMP_Pause (state As _Byte)
+        Shared __XMPPlayer As __XMPPlayerType
 
-        IF __XMPPlayer.context <> 0 THEN
+        If __XMPPlayer.context <> 0 Then
             __XMPPlayer.isPaused = state <> 0
-        END IF
-    END SUB
+        End If
+    End Sub
 
 
     ' Returns true if player is paused
-    FUNCTION XMP_IsPaused%%
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Function XMP_IsPaused%%
+        Shared __XMPPlayer As __XMPPlayerType
 
-        IF __XMPPlayer.context <> 0 THEN
+        If __XMPPlayer.context <> 0 Then
             XMP_IsPaused = __XMPPlayer.isPaused
-        END IF
-    END FUNCTION
+        End If
+    End Function
 
 
     ' Enables / disables playback looping
-    SUB XMP_Loop (state AS _BYTE)
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Sub XMP_Loop (state As _Byte)
+        Shared __XMPPlayer As __XMPPlayerType
 
-        IF __XMPPlayer.context <> 0 THEN
+        If __XMPPlayer.context <> 0 Then
             __XMPPlayer.isLooping = state <> 0
-        END IF
-    END SUB
+        End If
+    End Sub
 
 
     ' Returns true if playback is looping
-    FUNCTION XMP_IsLooping%%
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Function XMP_IsLooping%%
+        Shared __XMPPlayer As __XMPPlayerType
 
-        IF __XMPPlayer.context <> 0 THEN
+        If __XMPPlayer.context <> 0 Then
             XMP_IsLooping = __XMPPlayer.isLooping
-        END IF
-    END FUNCTION
+        End If
+    End Function
 
 
     ' Returns true if music is playing
-    FUNCTION XMP_IsPlaying%%
-        SHARED __XMPPlayer AS __XMPPlayerType
+    Function XMP_IsPlaying%%
+        Shared __XMPPlayer As __XMPPlayerType
 
-        IF __XMPPlayer.context <> 0 THEN
+        If __XMPPlayer.context <> 0 Then
             XMP_IsPlaying = __XMPPlayer.isPlaying
-        END IF
-    END FUNCTION
+        End If
+    End Function
     '-------------------------------------------------------------------------------------------------------------------
-$END IF
+$End If
 '-----------------------------------------------------------------------------------------------------------------------
