@@ -21,7 +21,7 @@ This is also loosely based on a [similar library](https://qb64phoenix.com/forum/
 FUNCTION XMP_LoadTuneFromFile%% (fileName AS STRING)
 FUNCTION XMP_LoadTuneFromMemory%% (buffer AS STRING)
 FUNCTION XMP_GetTuneName$
-FUNCTION XMP_GetTuneType
+FUNCTION XMP_GetTuneType$
 SUB XMP_Play
 SUB XMP_Stop
 SUB XMP_Replay
