@@ -29,6 +29,13 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
     END FUNCTION
 
 
+    ' Returns a BASIC string (bstring) from NULL terminated C string (cstring)
+    FUNCTION __XMP_ToBString$ (s AS STRING)
+        DIM zeroPos AS LONG: zeroPos = INSTR(s, CHR$(0))
+        IF zeroPos > 0 THEN __XMP_ToBString = LEFT$(s, zeroPos - 1) ELSE __XMP_ToBString = s
+    END FUNCTION
+
+
     ' This an internal fuction and should be called right after the module is loaded
     ' These are things that are common after loading a module
     FUNCTION __XMP_DoPostInit%%
@@ -147,6 +154,30 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
         __XMPPlayer.errorCode = xmp_load_module_from_memory(__XMPPlayer.context, buffer, LEN(buffer))
 
         XMP_LoadTuneFromMemory = __XMP_DoPostInit
+    END FUNCTION
+
+
+    ' Return the name of the tune
+    FUNCTION XMP_GetTuneName$
+        SHARED __XMPPlayer AS __XMPPlayerType
+
+        IF __XMPPlayer.context <> 0 THEN
+            DIM tuneName AS STRING: tuneName = __XMP_ToBString(__XMPPlayer.testInfo.mod_name)
+            IF tuneName = "" THEN tuneName = "Untitled"
+            XMP_GetTuneName = tuneName
+        END IF
+    END FUNCTION
+
+
+    ' Returns the tune format
+    FUNCTION XMP_GetTuneType$
+        SHARED __XMPPlayer AS __XMPPlayerType
+
+        IF __XMPPlayer.context <> 0 THEN
+            DIM tuneType AS STRING: tuneType = __XMP_ToBString(__XMPPlayer.testInfo.mod_type)
+            IF tuneType = "" THEN tuneType = "Unknown"
+            XMP_GetTuneType = tuneType
+        END IF
     END FUNCTION
 
 

@@ -171,11 +171,7 @@ FUNCTION OnPlaySong%% (fileName AS STRING)
     REDIM AS SINGLE rSig(0 TO __XMPPlayer.soundBufferFrames - 1), rFFTr(0 TO __XMPPlayer.soundBufferFrames - 1), rFFTi(0 TO __XMPPlayer.soundBufferFrames - 1)
 
     ' Set the app title to display the file name
-    IF LEN(GetDriveOrSchemeFromPathOrURL(fileName)) > 2 THEN
-        _TITLE GetLegalFileNameFromURL(fileName) + " - " + APP_NAME
-    ELSE
-        _TITLE GetFileNameFromPathOrURL(fileName) + " - " + APP_NAME
-    END IF
+    _TITLE XMP_GetTuneName + " - " + APP_NAME + " [" + XMP_GetTuneType + "]"
 
     XMP_Play
 
@@ -451,11 +447,11 @@ FUNCTION OnWelcomeScreen%%
         LOCATE 1, 1
         COLOR OrangeRed, Black
         IF TIMER MOD 7 = 0 THEN
-            PRINT "              _    _          ___    _                                     (+_+)"
-        ELSEIF TIMER MOD 13 = 0 THEN
             PRINT "              _    _          ___    _                                     (*_*)"
+        ELSEIF TIMER MOD 13 = 0 THEN
+            PRINT "              _    _          ___    _                                     (-_-)"
         ELSE
-            PRINT "              _    _          ___    _                                     (�_�)"
+            PRINT "              _    _          ___    _                                     (+_+)"
         END IF
         PRINT "             ( )  ( )/ \_/ \(   _ \ (_ )                                        "
         PRINT "              \ \/ / |     ||  |_) ) |(|    _ _  _   _    __   _ __             "
