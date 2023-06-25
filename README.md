@@ -12,7 +12,7 @@ This is also loosely based on a [similar library](https://qb64phoenix.com/forum/
 
 - Easy plug-&-play API optimized for demos & games
 - Works with the 64-bit QB64 complier (unlike RhoSigma's library that is 32-bit only)
-- Works on Windows (32-bit and 64-bit) and Linux (64-bit)
+- Works on Windows (64-bit) and Linux (64-bit)
 - Demo player that shows how to use the library
 
 ## API
@@ -39,7 +39,7 @@ SUB XMP_Update (bufferTimeSecs AS SINGLE)
 
 ## NOTES
 
-- This requires the latest version of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases)
-- IT, XM, S3M & MOD support is built into [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases/). The [miniaudio](https://miniaud.io/) backend in OB64-PE uses [Libxmp-lite](https://github.com/libxmp/libxmp/tree/master/lite). So, this is not technically not required
+- This requires the latest version of [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases/latest)
+- IT, XM, S3M & MOD support is built into [QB64-PE](https://github.com/QB64-Phoenix-Edition/QB64pe/releases/latest). The [miniaudio](https://miniaud.io/) backend in OB64-PE uses [Libxmp-lite](https://github.com/libxmp/libxmp/tree/master/lite). So, this is not technically not required
 - However, Libxmp-lite in QB64-PE does not support any other format other than IT, XM, S3M & MOD. Use this if you need to play those rare and obscure module formats
-- Help is needed to build Linux 32-bit and macOS 64-bit shared libraries from the latest Libxmp sources. Let me know if you can build and contribute. Or better, create a PR
+- Help is needed to build macOS 64-bit shared library from the latest Libxmp sources. Let me know if you can build and contribute
