@@ -162,9 +162,7 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
         SHARED __XMPPlayer AS __XMPPlayerType
 
         IF __XMPPlayer.context <> 0 THEN
-            DIM tuneName AS STRING: tuneName = __XMP_ToBString(__XMPPlayer.testInfo.mod_name)
-            IF tuneName = "" THEN tuneName = "Untitled"
-            XMP_GetTuneName = tuneName
+            XMP_GetTuneName = _TRIM$(__XMP_ToBString(__XMPPlayer.testInfo.mod_name))
         END IF
     END FUNCTION
 
@@ -174,7 +172,7 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
         SHARED __XMPPlayer AS __XMPPlayerType
 
         IF __XMPPlayer.context <> 0 THEN
-            DIM tuneType AS STRING: tuneType = __XMP_ToBString(__XMPPlayer.testInfo.mod_type)
+            DIM tuneType AS STRING: tuneType = _TRIM$(__XMP_ToBString(__XMPPlayer.testInfo.mod_type))
             IF tuneType = "" THEN tuneType = "Unknown"
             XMP_GetTuneType = tuneType
         END IF

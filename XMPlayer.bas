@@ -171,7 +171,16 @@ FUNCTION OnPlaySong%% (fileName AS STRING)
     REDIM AS SINGLE rSig(0 TO __XMPPlayer.soundBufferFrames - 1), rFFTr(0 TO __XMPPlayer.soundBufferFrames - 1), rFFTi(0 TO __XMPPlayer.soundBufferFrames - 1)
 
     ' Set the app title to display the file name
-    _TITLE XMP_GetTuneName + " - " + APP_NAME + " [" + XMP_GetTuneType + "]"
+    DIM tuneTitle AS STRING: tuneTitle = XMP_GetTuneName
+    IF tuneTitle = "" THEN
+        IF LEN(GetDriveOrSchemeFromPathOrURL(fileName)) > 2 THEN
+            tuneTitle = GetLegalFileNameFromURL(fileName)
+        ELSE
+            tuneTitle = GetFileNameFromPathOrURL(fileName)
+        END IF
+    END IF
+
+    _TITLE tuneTitle + " - " + APP_NAME + " [" + XMP_GetTuneType + "]"
 
     XMP_Play
 
