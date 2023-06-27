@@ -975,8 +975,8 @@ SUB UpdateAndDrawStars (stars() AS StarType, speed AS SINGLE)
         PSET (stars(i).p.x, stars(i).p.y), stars(i).c
 
         stars(i).p.z = stars(i).p.z + speed
-        stars(i).p.x = ((stars(i).p.x - (W / 2)) * (stars(i).p.z / 4096)) + (W / 2)
-        stars(i).p.y = ((stars(i).p.y - (H / 2)) * (stars(i).p.z / 4096)) + (H / 2)
+        stars(i).p.x = ((stars(i).p.x - (W / 2)) * (stars(i).p.z / 4096.0!)) + (W / 2)
+        stars(i).p.y = ((stars(i).p.y - (H / 2)) * (stars(i).p.z / 4096.0!)) + (H / 2)
     NEXT
 END SUB
 
@@ -992,8 +992,8 @@ SUB InitializeCircleWaves (circleWaves() AS CircleWaveType)
         circleWaves(i).r = GetRandomValue(10, 40)
         circleWaves(i).p.x = GetRandomValue(circleWaves(i).r, W - circleWaves(i).r)
         circleWaves(i).p.y = GetRandomValue(circleWaves(i).r, H - circleWaves(i).r)
-        circleWaves(i).v.x = (RND - RND) / 2.0!
-        circleWaves(i).v.y = (RND - RND) / 2.0!
+        circleWaves(i).v.x = (RND - RND) / 3.0!
+        circleWaves(i).v.y = (RND - RND) / 3.0!
         circleWaves(i).s = GetRandomValue(1, 100) / 4000.0!
         circleWaves(i).c.r = GetRandomValue(0, 128)
         circleWaves(i).c.g = GetRandomValue(0, 128)
@@ -1015,13 +1015,13 @@ SUB UpdateAndDrawCircleWaves (circleWaves() AS CircleWaveType, size AS SINGLE)
 
         IF circleWaves(i).a >= 1.0! THEN circleWaves(i).s = circleWaves(i).s * -1
 
-        IF circleWaves(i).a <= 0 THEN
+        IF circleWaves(i).a <= 0.0! THEN
             circleWaves(i).a = 0.0!
             circleWaves(i).r = GetRandomValue(10, 40)
             circleWaves(i).p.x = GetRandomValue(circleWaves(i).r, W - circleWaves(i).r)
             circleWaves(i).p.y = GetRandomValue(circleWaves(i).r, H - circleWaves(i).r)
-            circleWaves(i).v.x = (RND - RND) / 2.0!
-            circleWaves(i).v.y = (RND - RND) / 2.0!
+            circleWaves(i).v.x = (RND - RND) / 3.0!
+            circleWaves(i).v.y = (RND - RND) / 3.0!
             circleWaves(i).s = GetRandomValue(1, 100) / 4000.0!
             circleWaves(i).c.r = GetRandomValue(0, 128)
             circleWaves(i).c.g = GetRandomValue(0, 128)
