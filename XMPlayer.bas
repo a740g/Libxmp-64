@@ -300,17 +300,18 @@ SUB DrawVisualization
         rSamp = _MEMGET(__XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_SAMPLE_SIZE, INTEGER) / 32768!
         rSig(c) = rSamp
 
-        power = power + ABS(lSamp) + ABS(rSamp) ' sum and store the absolute value of all samples
+        power = power + lSamp * lSamp + rSamp * rSamp ' we'll use this to calculate the sound power right after the loop
     NEXT
 
-    power = (0.5! * power) / __XMPPlayer.soundBufferFrames: IF power <= 0.0000001192093! THEN power = 0.0000001192093!
+    power = power / _SHL(__XMPPlayer.soundBufferFrames, 1) ' left shift because each frame has 2 samples (L & R)
 
     ' Draw the background
     SELECT CASE BackGroundType
         CASE 1
-            UpdateAndDrawStars Stars(), -4.0! * LOG(1.0! - power)
+            ' Larger values of power will have more impact on speed and we'll not let this go to zero else LOG will puke
+            UpdateAndDrawStars Stars(), -8.0! * LOG(1.0000001192093! - power)
         CASE 2
-            UpdateAndDrawCircleWaves CircleWaves(), 2.0! * power
+            UpdateAndDrawCircleWaves CircleWaves(), 8.0! * power
     END SELECT
 
     ' Draw the tune info
