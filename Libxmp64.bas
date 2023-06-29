@@ -172,9 +172,7 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
         SHARED __XMPPlayer AS __XMPPlayerType
 
         IF __XMPPlayer.context <> 0 THEN
-            DIM tuneType AS STRING: tuneType = _TRIM$(__XMP_ToBString(__XMPPlayer.testInfo.mod_type))
-            IF tuneType = "" THEN tuneType = "Unknown"
-            XMP_GetTuneType = tuneType
+            XMP_GetTuneType = _TRIM$(__XMP_ToBString(__XMPPlayer.testInfo.mod_type))
         END IF
     END FUNCTION
 
