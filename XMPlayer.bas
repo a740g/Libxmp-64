@@ -281,10 +281,6 @@ END FUNCTION
 SUB DrawVisualization
     SHARED __XMPPlayer AS __XMPPlayerType ' we are using this only to access the library internals to draw the analyzer
 
-    CLS , Black ' first clear everything
-
-    IF XMP_IsPaused OR NOT XMP_IsPlaying THEN COLOR OrangeRed ELSE COLOR White
-
     DIM AS LONG i, upperBound
     DIM AS SINGLE lSamp, rSamp, power
     DIM AS _UNSIGNED LONG c
@@ -305,6 +301,8 @@ SUB DrawVisualization
 
     power = power / _SHL(__XMPPlayer.soundBufferFrames, 1) ' left shift because each frame has 2 samples (L & R)
 
+    CLS , Black ' first clear everything
+
     ' Draw the background
     SELECT CASE BackGroundType
         CASE 1
@@ -314,12 +312,14 @@ SUB DrawVisualization
             UpdateAndDrawCircleWaves CircleWaves(), 8.0! * power
     END SELECT
 
+    IF XMP_IsPaused OR NOT XMP_IsPlaying THEN COLOR OrangeRed ELSE COLOR White
+
     ' Draw the tune info
     DIM AS STRING * 2 minute, second
 
     LOCATE 21, 49: PRINT "Buffered sound:"; FIX(_SNDRAWLEN(__XMPPlayer.soundHandle) * 1000); "ms ";
     LOCATE 22, 49: PRINT "Position / Row:"; __XMPPlayer.frameInfo.position; "/"; __XMPPlayer.frameInfo.row; "  ";
-    LOCATE 23, 49: PRINT "Current volume:"; Volume;
+    LOCATE 23, 49: PRINT USING "Current volume: ###%"; Volume;
     minute = RIGHT$("00" + LTRIM$(STR$((__XMPPlayer.frameInfo.time + 500) \ 60000)), 2)
     second = RIGHT$("00" + LTRIM$(STR$(((__XMPPlayer.frameInfo.time + 500) \ 1000) MOD 60)), 2)
     LOCATE 24, 49: PRINT USING "  Elapsed time: &:& (mm:ss)"; minute; second;
@@ -328,7 +328,7 @@ SUB DrawVisualization
     LOCATE 25, 49: PRINT USING "    Total time: &:& (mm:ss)"; minute; second;
     LOCATE 26, 56: PRINT "Looping: "; BoolToStr(XMP_IsLooping, 2); " ";
 
-    COLOR LightBlue
+    COLOR Cyan
 
     IF OsciType = 2 THEN
         LOCATE 19, 4: PRINT "F/f - FREQUENCY ZOOM IN / OUT";
@@ -363,12 +363,12 @@ SUB DrawVisualization
     '-------------------------------------------------------------------------------------------------------------------
     DrawOscillators: ' animate waveform oscillators
     '-------------------------------------------------------------------------------------------------------------------
-    COLOR Brown
-    LOCATE 1, 24: PRINT USING "Current volume boost factor = #.##"; VolBoost;
+    COLOR DarkOrange
+    LOCATE 1, 23: PRINT USING "Current amplitude boost factor = #.##"; VolBoost;
     COLOR White
     LOCATE 3, 29: PRINT "Left channel (wave plot)";
     LOCATE 11, 29: PRINT "Right channel (wave plot)"
-    COLOR Green
+    COLOR Lime
     LOCATE 3, 3: PRINT "0 [ms]";
     LOCATE 11, 3: PRINT "0 [ms]";
     text = STR$((__XMPPlayer.soundBufferFrames * 1000~&) \ _SNDRATE) + " [ms]"
@@ -400,12 +400,12 @@ SUB DrawVisualization
     '-------------------------------------------------------------------------------------------------------------------
     DrawFFT: ' animate FFT frequency oscillators
     '-------------------------------------------------------------------------------------------------------------------
-    COLOR Brown
+    COLOR DarkOrange
     LOCATE 1, 3: PRINT USING "Current frequence zoom factor = ##  /  Current magnitude scale factor = #.##"; FreqFact; MagFact;
     COLOR White
     LOCATE 3, 23: PRINT "Left channel (frequency spectrum)";
     LOCATE 11, 23: PRINT "Right channel (frequency spectrum)";
-    COLOR Green
+    COLOR Lime
     text = STR$(_SNDRATE \ __XMPPlayer.soundBufferFrames) + " [Hz]"
     LOCATE 3, 2: PRINT text;
     LOCATE 11, 2: PRINT text;
@@ -603,10 +603,8 @@ END FUNCTION
 
 ' Gets a random file URL from www.modarchive.org
 FUNCTION GetRandomModArchiveFileName$
-    CONST THE_MOD_ARCHIVE_SEARCH_URL = "https://api.modarchive.org/downloads.php?moduleid="
-
     DIM buffer AS STRING: buffer = LoadFileFromURL("https://modarchive.org/index.php?request=view_random")
-    DIM bufPos AS LONG: bufPos = INSTR(buffer, THE_MOD_ARCHIVE_SEARCH_URL)
+    DIM bufPos AS LONG: bufPos = INSTR(buffer, "https://api.modarchive.org/downloads.php?moduleid=")
 
     IF bufPos > 0 THEN
         GetRandomModArchiveFileName = MID$(buffer, bufPos, INSTR(bufPos, buffer, CHR$(34)) - bufPos)
