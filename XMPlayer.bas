@@ -114,7 +114,7 @@ _DISPLAY ' only swap buffer when we want
 Volume = XMP_VOLUME_MAX ' set initial volume as 100%
 OsciType = 2 ' 1 = Wave plot, 2 = Frequency spectrum (FFT)
 BackGroundType = 2 ' 0 = None, 1 = Stars, 2 = Circle Waves
-FreqFact = 2 ' frequency spectrum X-axis scale (powers of two only [2-8])
+FreqFact = 4 ' frequency spectrum X-axis scale (powers of two only [2-8])
 MagFact = 4 ' frequency spectrum Y-axis scale (magnitude [1.0-5.0])
 VolBoost = 1 ' no change
 InitializeStars Stars()
@@ -280,23 +280,18 @@ END FUNCTION
 ' Draws the visualization screen during playback
 SUB DrawVisualization
     SHARED __XMPPlayer AS __XMPPlayerType ' we are using this only to access the library internals to draw the analyzer
+    SHARED __XMPSoundBuffer() AS INTEGER
 
     DIM AS LONG i, upperBound
-    DIM AS SINGLE lSamp, rSamp, power
-    DIM AS _UNSIGNED LONG c
+    DIM power AS SINGLE
 
     ' Fill the FFT arrays with sample data
-    upperBound = __XMPPlayer.soundBufferBytes - XMP_SOUND_BUFFER_SAMPLE_SIZE
+    upperBound = __XMPPlayer.soundBufferFrames - 1
+    FOR i = 0 TO upperBound
+        lSig(i) = __XMPSoundBuffer(XMP_SOUND_BUFFER_CHANNELS * i) / 32768!
+        rSig(i) = __XMPSoundBuffer(XMP_SOUND_BUFFER_CHANNELS * i + 1) / 32768!
 
-    FOR i = 0 TO upperBound STEP XMP_SOUND_BUFFER_FRAME_SIZE
-        c = i \ XMP_SOUND_BUFFER_FRAME_SIZE
-
-        lSamp = _MEMGET(__XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET + i, INTEGER) / 32768!
-        lSig(c) = lSamp
-        rSamp = _MEMGET(__XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_SAMPLE_SIZE, INTEGER) / 32768!
-        rSig(c) = rSamp
-
-        power = power + lSamp * lSamp + rSamp * rSamp ' we'll use this to calculate the sound power right after the loop
+        power = power + lSig(i) * lSig(i) + rSig(i) * rSig(i) ' we'll use this to calculate the sound power right after the loop
     NEXT
 
     power = power / _SHL(__XMPPlayer.soundBufferFrames, 1) ' left shift because each frame has 2 samples (L & R)
@@ -348,6 +343,7 @@ SUB DrawVisualization
     LOCATE 29, 4: PRINT "/ - REWIND/FORWARD ONE POSITION";
 
     DIM AS LONG xp, yp
+    DIM AS _UNSIGNED LONG c
     DIM AS STRING text
 
     ON OsciType GOSUB DrawOscillators, DrawFFT
@@ -839,7 +835,7 @@ SUB RFFT (out_r() AS SINGLE, out_i() AS SINGLE, in_r() AS SINGLE)
     FOR i = 0 TO half_n - 1
         rev = 0
         FOR j = 0 TO log2n - 1
-            IF i AND (2 ^ j) THEN rev = rev + (2 ^ (log2n - 1 - j))
+            IF i AND _SHL(1, j) THEN rev = rev + _SHL(1, (log2n - 1 - j))
         NEXT
 
         out_r(i) = in_r(2 * rev)
@@ -847,7 +843,7 @@ SUB RFFT (out_r() AS SINGLE, out_i() AS SINGLE, in_r() AS SINGLE)
     NEXT
 
     FOR i = 1 TO log2n
-        m = 2 ^ i
+        m = _SHL(1, i)
         pi_m = _PI(-2 / m)
         wm_r = COS(pi_m)
         wm_i = SIN(pi_m)
@@ -894,8 +890,11 @@ SUB RFFT (out_r() AS SINGLE, out_i() AS SINGLE, in_r() AS SINGLE)
         xmi = (out_i(i) - out_i(half_n + i)) * 0.5!
 
         pi_m = _PI(2 * i / n)
-        out_r(i) = xpr + xpi * COS(pi_m) - xmr * SIN(pi_m)
-        out_i(i) = xmi - xpi * SIN(pi_m) - xmr * COS(pi_m)
+        wm_r = COS(pi_m)
+        wm_i = SIN(pi_m)
+
+        out_r(i) = xpr + xpi * wm_r - xmr * wm_i
+        out_i(i) = xmi - xpi * wm_i - xmr * wm_r
     NEXT
 
     FOR i = 0 TO half_n - 1

@@ -115,8 +115,8 @@ $IF LIBXMP64_BI = UNDEFINED THEN
         frameInfo AS xmp_frame_info ' current frame info. This is used to check if we are looping or playback is done
         testInfo AS xmp_test_info ' this will have the MOD name and type
         errorCode AS LONG ' this hold the error code from a previous XMP function
-        soundBuffer AS _MEM ' this is the buffer that holds the rendered samples from libxmp
         soundBufferBytes AS _UNSIGNED LONG ' size of the render buffer in bytes
+        soundBufferSamples AS _UNSIGNED LONG ' size of the rendered buffer in samples
         soundBufferFrames AS _UNSIGNED LONG ' size of the render buffer in frames
         soundHandle AS LONG ' the sound pipe that we wll use to play the rendered samples
     END TYPE
@@ -146,7 +146,7 @@ $IF LIBXMP64_BI = UNDEFINED THEN
         SUB xmp_release_module (BYVAL context AS _OFFSET)
         FUNCTION xmp_start_player& (BYVAL context AS _OFFSET, BYVAL rate AS LONG, BYVAL format AS LONG)
         SUB xmp_end_player (BYVAL context AS _OFFSET)
-        FUNCTION xmp_play_buffer& (BYVAL context AS _OFFSET, BYVAL buffer AS _OFFSET, BYVAL size AS LONG, BYVAL loops AS LONG)
+        FUNCTION xmp_play_buffer& (BYVAL context AS _OFFSET, buffer AS INTEGER, BYVAL size AS LONG, BYVAL loops AS LONG)
         SUB xmp_get_frame_info (BYVAL context AS _OFFSET, frame_info AS xmp_frame_info)
         FUNCTION xmp_get_player& (BYVAL context AS _OFFSET, BYVAL param AS LONG)
         FUNCTION xmp_set_player& (BYVAL context AS _OFFSET, BYVAL param AS LONG, BYVAL value AS LONG)
@@ -161,7 +161,8 @@ $IF LIBXMP64_BI = UNDEFINED THEN
     '-------------------------------------------------------------------------------------------------------------------
     ' GLOBAL VARIABLES
     '-------------------------------------------------------------------------------------------------------------------
-    DIM __XMPPlayer AS __XMPPlayerType
+    DIM __XMPPlayer AS __XMPPlayerType ' this is used to track the library state as such
+    REDIM __XMPSoundBuffer(0 TO 0) AS INTEGER ' this is the buffer that holds the rendered samples from libxmp
     '-------------------------------------------------------------------------------------------------------------------
 $END IF
 '-----------------------------------------------------------------------------------------------------------------------

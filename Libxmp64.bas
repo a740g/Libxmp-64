@@ -5,19 +5,14 @@
 ' This mostly has the glue code that make working with Libxmp and QB64-PE easy
 '-----------------------------------------------------------------------------------------------------------------------
 
-'-----------------------------------------------------------------------------------------------------------------------
-' HEADER FILES
-'-----------------------------------------------------------------------------------------------------------------------
 '$INCLUDE:'Libxmp64.bi'
-'-----------------------------------------------------------------------------------------------------------------------
 
 $IF LIBXMP64_BAS = UNDEFINED THEN
     $LET LIBXMP64_BAS = TRUE
-    '-------------------------------------------------------------------------------------------------------------------
-    ' FUNCTIONS & SUBROUTINES
-    '-------------------------------------------------------------------------------------------------------------------
+
     ' Rounds a number down to a power of 2 (this time the non-noobie way :)
     FUNCTION __XMP_RoundDownToPowerOf2~& (i AS _UNSIGNED LONG)
+        $CHECKING:OFF
         DIM j AS _UNSIGNED LONG
         j = i
         j = j OR _SHR(j, 1)
@@ -26,13 +21,16 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
         j = j OR _SHR(j, 8)
         j = j OR _SHR(j, 16)
         __XMP_RoundDownToPowerOf2 = j - _SHR(j, 1)
+        $CHECKING:ON
     END FUNCTION
 
 
     ' Returns a BASIC string (bstring) from NULL terminated C string (cstring)
     FUNCTION __XMP_ToBString$ (s AS STRING)
+        $CHECKING:OFF
         DIM zeroPos AS LONG: zeroPos = INSTR(s, CHR$(0))
         IF zeroPos > 0 THEN __XMP_ToBString = LEFT$(s, zeroPos - 1) ELSE __XMP_ToBString = s
+        $CHECKING:ON
     END FUNCTION
 
 
@@ -40,6 +38,7 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
     ' These are things that are common after loading a module
     FUNCTION __XMP_DoPostInit%%
         SHARED __XMPPlayer AS __XMPPlayerType
+        SHARED __XMPSoundBuffer() AS INTEGER
 
         ' Exit if module loading failed
         IF __XMPPlayer.errorCode <> 0 THEN
@@ -60,19 +59,12 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
             EXIT FUNCTION
         END IF
 
-        ' Allocate the mixer buffer
-        __XMPPlayer.soundBufferFrames = __XMP_RoundDownToPowerOf2(_SNDRATE * XMP_SOUND_BUFFER_TIME_DEFAULT * XMP_SOUND_BUFFER_TIME_DEFAULT) ' 40 ms buffer round down to power of 2
-        __XMPPlayer.soundBufferBytes = __XMPPlayer.soundBufferFrames * XMP_SOUND_BUFFER_FRAME_SIZE ' power of 2 above is required by most FFT functions
-        __XMPPlayer.soundBuffer = _MEMNEW(__XMPPlayer.soundBufferBytes)
-
-        ' Exit if memory was not allocated
-        IF __XMPPlayer.soundBuffer.SIZE = 0 THEN
-            xmp_end_player __XMPPlayer.context
-            xmp_release_module __XMPPlayer.context
-            xmp_free_context __XMPPlayer.context
-            __XMPPlayer.context = 0
-            EXIT FUNCTION
-        END IF
+        ' Allocate a 40 ms mixer buffer and ensure we round down to power of 2
+        ' Power of 2 above is required by most FFT functions
+        __XMPPlayer.soundBufferFrames = __XMP_RoundDownToPowerOf2(_SNDRATE * XMP_SOUND_BUFFER_TIME_DEFAULT * XMP_SOUND_BUFFER_TIME_DEFAULT) ' buffer frames
+        __XMPPlayer.soundBufferSamples = __XMPPlayer.soundBufferFrames * XMP_SOUND_BUFFER_CHANNELS ' buffer samples
+        __XMPPlayer.soundBufferBytes = __XMPPlayer.soundBufferSamples * XMP_SOUND_BUFFER_SAMPLE_SIZE ' buffer bytes
+        REDIM __XMPSoundBuffer(0 TO __XMPPlayer.soundBufferSamples - 1) AS INTEGER
 
         ' Set some player properties
         ' These makes the sound quality much better when devices have sample rates other than 44100
@@ -84,7 +76,6 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
 
         ' Exit if failed to allocate sound handle
         IF __XMPPlayer.soundHandle < 1 THEN
-            _MEMFREE __XMPPlayer.soundBuffer
             xmp_end_player __XMPPlayer.context
             xmp_release_module __XMPPlayer.context
             xmp_free_context __XMPPlayer.context
@@ -159,21 +150,25 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
 
     ' Return the name of the tune
     FUNCTION XMP_GetTuneName$
+        $CHECKING:OFF
         SHARED __XMPPlayer AS __XMPPlayerType
 
         IF __XMPPlayer.context <> 0 THEN
             XMP_GetTuneName = _TRIM$(__XMP_ToBString(__XMPPlayer.testInfo.mod_name))
         END IF
+        $CHECKING:ON
     END FUNCTION
 
 
     ' Returns the tune format
     FUNCTION XMP_GetTuneType$
+        $CHECKING:OFF
         SHARED __XMPPlayer AS __XMPPlayerType
 
         IF __XMPPlayer.context <> 0 THEN
             XMP_GetTuneType = _TRIM$(__XMP_ToBString(__XMPPlayer.testInfo.mod_type))
         END IF
+        $CHECKING:ON
     END FUNCTION
 
 
@@ -202,9 +197,6 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
             ' Free the sound pipe
             _SNDRAWDONE __XMPPlayer.soundHandle ' Sumbit whatever is remaining in the raw buffer for playback
             _SNDCLOSE __XMPPlayer.soundHandle ' Close QB64 sound pipe
-
-            ' Free the mixer buffer
-            _MEMFREE __XMPPlayer.soundBuffer
 
             ' Cleanup XMP
             xmp_end_player __XMPPlayer.context
@@ -268,16 +260,18 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
     ' This handles playback and keeping track of the render buffer
     ' You can call this as frequenctly as you want. The routine will simply exit if nothing is to be done
     SUB XMP_Update (bufferTimeSecs AS SINGLE)
+        $CHECKING:OFF
         SHARED __XMPPlayer AS __XMPPlayerType
+        SHARED __XMPSoundBuffer() AS INTEGER
 
         ' If song is done, paused or we already have enough samples to play then exit
         IF __XMPPlayer.context = 0 OR NOT __XMPPlayer.isPlaying OR __XMPPlayer.isPaused OR _SNDRAWLEN(__XMPPlayer.soundHandle) > bufferTimeSecs THEN EXIT SUB
 
         ' Clear the render buffer
-        _MEMFILL __XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET, __XMPPlayer.soundBufferBytes, 0 AS _BYTE
+        REDIM __XMPSoundBuffer(0 TO __XMPPlayer.soundBufferSamples - 1) AS INTEGER
 
         ' Render some samples to the buffer
-        __XMPPlayer.errorCode = xmp_play_buffer(__XMPPlayer.context, __XMPPlayer.soundBuffer.OFFSET, __XMPPlayer.soundBufferBytes, 0)
+        __XMPPlayer.errorCode = xmp_play_buffer(__XMPPlayer.context, __XMPSoundBuffer(0), __XMPPlayer.soundBufferBytes, 0)
 
         ' Get the frame information
         xmp_get_frame_info __XMPPlayer.context, __XMPPlayer.frameInfo
@@ -292,10 +286,12 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
         END IF
 
         ' Push the samples to the sound pipe
-        DIM i AS _UNSIGNED LONG
-        FOR i = 0 TO __XMPPlayer.soundBufferBytes - XMP_SOUND_BUFFER_SAMPLE_SIZE STEP XMP_SOUND_BUFFER_FRAME_SIZE
-            _SNDRAW _MEMGET(__XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET + i, INTEGER) / 32768!, _MEMGET(__XMPPlayer.soundBuffer, __XMPPlayer.soundBuffer.OFFSET + i + XMP_SOUND_BUFFER_SAMPLE_SIZE, INTEGER) / 32768!, __XMPPlayer.soundHandle
+        DIM AS _UNSIGNED LONG i, upperBound
+        upperBound = __XMPPlayer.soundBufferSamples - XMP_SOUND_BUFFER_CHANNELS
+        FOR i = 0 TO upperBound STEP XMP_SOUND_BUFFER_CHANNELS
+            _SNDRAW __XMPSoundBuffer(i) / 32768!, __XMPSoundBuffer(i + 1) / 32768!, __XMPPlayer.soundHandle
         NEXT
+        $CHECKING:ON
     END SUB
 
 
@@ -317,11 +313,13 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
 
     ' Gets the master volume
     FUNCTION XMP_GetVolume&
+        $CHECKING:OFF
         SHARED __XMPPlayer AS __XMPPlayerType
 
         IF __XMPPlayer.context <> 0 AND __XMPPlayer.isPlaying THEN
             XMP_GetVolume = xmp_get_player(__XMPPlayer.context, XMP_PLAYER_VOLUME)
         END IF
+        $CHECKING:ON
     END FUNCTION
 
 
@@ -337,11 +335,13 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
 
     ' Returns true if player is paused
     FUNCTION XMP_IsPaused%%
+        $CHECKING:OFF
         SHARED __XMPPlayer AS __XMPPlayerType
 
         IF __XMPPlayer.context <> 0 THEN
             XMP_IsPaused = __XMPPlayer.isPaused
         END IF
+        $CHECKING:ON
     END FUNCTION
 
 
@@ -357,22 +357,25 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
 
     ' Returns true if playback is looping
     FUNCTION XMP_IsLooping%%
+        $CHECKING:OFF
         SHARED __XMPPlayer AS __XMPPlayerType
 
         IF __XMPPlayer.context <> 0 THEN
             XMP_IsLooping = __XMPPlayer.isLooping
         END IF
+        $CHECKING:ON
     END FUNCTION
 
 
     ' Returns true if music is playing
     FUNCTION XMP_IsPlaying%%
+        $CHECKING:OFF
         SHARED __XMPPlayer AS __XMPPlayerType
 
         IF __XMPPlayer.context <> 0 THEN
             XMP_IsPlaying = __XMPPlayer.isPlaying
         END IF
+        $CHECKING:ON
     END FUNCTION
-    '-------------------------------------------------------------------------------------------------------------------
+
 $END IF
-'-----------------------------------------------------------------------------------------------------------------------
