@@ -126,9 +126,9 @@ $IF LIBXMP64_BI = UNDEFINED THEN
     ' EXTERNAL LIBRARIES
     '-------------------------------------------------------------------------------------------------------------------
     $IF WINDOWS THEN
-            DECLARE DYNAMIC LIBRARY "libxmp"
-    $ELSE
-        DECLARE DYNAMIC LIBRARY "xmp"
+        DECLARE DYNAMIC LIBRARY "libxmp"
+        $ELSE
+            DECLARE DYNAMIC LIBRARY "xmp"
         $END IF
         FUNCTION xmp_create_context%&
         SUB xmp_free_context (BYVAL context AS _OFFSET)

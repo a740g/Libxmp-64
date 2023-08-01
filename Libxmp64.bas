@@ -286,11 +286,11 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
         END IF
 
         ' Push the samples to the sound pipe
-        DIM AS _UNSIGNED LONG i, upperBound
-        upperBound = __XMPPlayer.soundBufferSamples - XMP_SOUND_BUFFER_CHANNELS
-        FOR i = 0 TO upperBound STEP XMP_SOUND_BUFFER_CHANNELS
+        DIM i AS _UNSIGNED LONG
+        DO WHILE i < __XMPPlayer.soundBufferSamples
             _SNDRAW __XMPSoundBuffer(i) / 32768!, __XMPSoundBuffer(i + 1) / 32768!, __XMPPlayer.soundHandle
-        NEXT
+            i = i + XMP_SOUND_BUFFER_CHANNELS
+        LOOP
         $CHECKING:ON
     END SUB
 
