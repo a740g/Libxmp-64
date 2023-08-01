@@ -125,17 +125,10 @@ $IF LIBXMP64_BI = UNDEFINED THEN
     '-------------------------------------------------------------------------------------------------------------------
     ' EXTERNAL LIBRARIES
     '-------------------------------------------------------------------------------------------------------------------
-    ' HELP NEEDED: macOS support is trivial but missing because I do not own an Apple system to compile a Libxmp .dylib
     $IF WINDOWS THEN
-        DECLARE DYNAMIC LIBRARY "libxmp"
-        $ELSEIF LINUX THEN
-            DECLARE DYNAMIC LIBRARY "xmp" ' QB64 adds the 'lib' prefix on Linux & macOS
-        $ELSEIF MACOSX THEN
-            $ERROR macOS not supported yet
-            DECLARE DYNAMIC LIBRARY "xmp"
-        $ELSE
-            $ERROR Unknown platform
-            DECLARE DYNAMIC LIBRARY "xmp"
+            DECLARE DYNAMIC LIBRARY "libxmp"
+    $ELSE
+        DECLARE DYNAMIC LIBRARY "xmp"
         $END IF
         FUNCTION xmp_create_context%&
         SUB xmp_free_context (BYVAL context AS _OFFSET)
