@@ -563,7 +563,7 @@ FUNCTION OnSelectedFiles%%
     DIM ofdList AS STRING
     DIM e AS _BYTE: e = EVENT_NONE
 
-    ofdList = _OPENFILEDIALOG$(APP_NAME, , "*.*", "All files", TRUE)
+    ofdList = _OPENFILEDIALOG$(APP_NAME, , , "All files", TRUE)
 
     IF ofdList = "" THEN EXIT FUNCTION
 
