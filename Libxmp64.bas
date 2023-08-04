@@ -5,10 +5,10 @@
 ' This mostly has the glue code that make working with Libxmp and QB64-PE easy
 '-----------------------------------------------------------------------------------------------------------------------
 
-'$INCLUDE:'Libxmp64.bi'
-
 $IF LIBXMP64_BAS = UNDEFINED THEN
     $LET LIBXMP64_BAS = TRUE
+
+    '$INCLUDE:'Libxmp64.bi'
 
     ' Rounds a number down to a power of 2 (this time the non-noobie way :)
     FUNCTION __XMP_RoundDownToPowerOf2~& (i AS _UNSIGNED LONG)
