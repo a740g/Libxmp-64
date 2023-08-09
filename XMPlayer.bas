@@ -94,8 +94,7 @@ END TYPE
 '-----------------------------------------------------------------------------------------------------------------------
 DIM SHARED Volume AS LONG, OsciType AS LONG, BackGroundType AS LONG
 DIM SHARED FreqFact AS LONG, MagFact AS SINGLE, VolBoost AS SINGLE
-REDIM SHARED AS SINGLE lSig(0 TO 0), lFFT(0 TO 0) ' left channel FP32 sample and FFT data
-REDIM SHARED AS SINGLE rSig(0 TO 0), rFFT(0 TO 0) ' right channel FP32 sample and FFT data
+REDIM SHARED AS SINGLE lFFT(0 TO 0), rFFT(0 TO 0)
 DIM SHARED Stars(1 TO STAR_COUNT) AS StarType
 DIM SHARED CircleWaves(1 TO CIRCLE_WAVE_COUNT) AS CircleWaveType
 '-----------------------------------------------------------------------------------------------------------------------
@@ -167,8 +166,7 @@ FUNCTION OnPlaySong%% (fileName AS STRING)
     END IF
 
     ' Setup the FFT arrays
-    REDIM AS SINGLE lSig(0 TO __XMPPlayer.soundBufferFrames - 1), lFFT(0 TO __XMPPlayer.soundBufferFrames \ 2 - 1)
-    REDIM AS SINGLE rSig(0 TO __XMPPlayer.soundBufferFrames - 1), rFFT(0 TO __XMPPlayer.soundBufferFrames \ 2 - 1)
+    REDIM AS SINGLE lFFT(0 TO __XMPPlayer.soundBufferFrames \ 2 - 1), rFFT(0 TO __XMPPlayer.soundBufferFrames \ 2 - 1)
 
     ' Set the app title to display the file name
     DIM tuneTitle AS STRING: tuneTitle = XMP_GetTuneName
@@ -282,17 +280,8 @@ SUB DrawVisualization
     SHARED __XMPPlayer AS __XMPPlayerType ' we are using this only to access the library internals to draw the analyzer
     SHARED __XMPSoundBuffer() AS INTEGER
 
-    ' Fill the FFT arrays with sample data
-    DIM power AS SINGLE, i AS LONG: i = 0
-    DO WHILE i < __XMPPlayer.soundBufferFrames
-        lSig(i) = __XMPSoundBuffer(XMP_SOUND_BUFFER_CHANNELS * i) / 32768!
-        rSig(i) = __XMPSoundBuffer(XMP_SOUND_BUFFER_CHANNELS * i + 1) / 32768!
-
-        power = power + lSig(i) * lSig(i) + rSig(i) * rSig(i) ' we'll use this to calculate the sound power right after the loop
-        i = i + 1
-    LOOP
-
-    power = power / __XMPPlayer.soundBufferSamples ' because each frame has 2 samples (L & R)
+    ' Do FFT and calculate power for both left and right channel
+    DIM power AS SINGLE: power = (DoAnalyzerFFT(__XMPSoundBuffer(), 0, 2, lFFT()) + DoAnalyzerFFT(__XMPSoundBuffer(), 1, 2, rFFT())) / 2
 
     CLS , Black ' first clear everything
 
@@ -339,7 +328,7 @@ SUB DrawVisualization
     LOCATE 28, 4: PRINT "R|r - REWIND TO START";
     LOCATE 29, 4: PRINT "/ - REWIND/FORWARD ONE POSITION";
 
-    DIM AS LONG xp, yp
+    DIM AS LONG i, xp, yp
     DIM AS _UNSIGNED LONG c
     DIM AS STRING text
 
@@ -375,12 +364,12 @@ SUB DrawVisualization
     DO WHILE i < __XMPPlayer.soundBufferFrames
         xp = 21 + (i * 599) \ __XMPPlayer.soundBufferFrames ' 21 = x_start, 599 = oscillator_width
 
-        yp = lSig(i) * VolBoost * 47
+        yp = __XMPSoundBuffer(XMP_SOUND_BUFFER_CHANNELS * i) * VolBoost * 0.001434326171875! ' <= 1 / (32768 / 47)
         c = 20 + ABS(yp) * 5 ' we're cheating here a bit to set the color using yp
         IF ABS(yp) > 47 THEN yp = 47 * SGN(yp) + 96 ELSE yp = yp + 96 ' 96 = y_start, 47 = oscillator_height
         LINE (xp, 96)-(xp, yp), _RGBA32(c, 255 - c, 0, 255)
 
-        yp = rSig(i) * VolBoost * 47
+        yp = __XMPSoundBuffer(XMP_SOUND_BUFFER_CHANNELS * i + 1) * VolBoost * 0.001434326171875! ' <= 1 / (32768 / 47)
         c = 20 + ABS(yp) * 5 ' we're cheating here a bit to set the color using yp
         IF ABS(yp) > 47 THEN yp = 47 * SGN(yp) + 224 ELSE yp = yp + 224 ' 224 = y_start, 47 = oscillator_height
         LINE (xp, 224)-(xp, yp), _RGBA32(c, 255 - c, 0, 255)
@@ -408,10 +397,6 @@ SUB DrawVisualization
     i = 79 - LEN(text)
     LOCATE 3, i: PRINT text;
     LOCATE 11, i: PRINT text;
-
-    ' Do RFFT for both left and right channel
-    AnalyzerFFT lSig(), lFFT()
-    AnalyzerFFT rSig(), rFFT()
 
     ' As the oscillators width is probably <> frequency range, we need to scale the x-position, same is with the magnitude (y-position)
     ' We'll also do the whole drawing using one loop instead of two to get better performance
@@ -826,155 +811,121 @@ FUNCTION GetRandomValue& (lo AS LONG, hi AS LONG)
 END FUNCTION
 
 
-' Calculates the position of the leftmost (most significant) bit that is set (1) in a given 32-bit unsigned integer i
-' Basically a fast log2(v)
-FUNCTION GetMostSignificantBitPosition~& (i AS _UNSIGNED LONG)
-    $CHECKING:OFF
-    DIM AS _UNSIGNED LONG r, v: v = i
-    IF v > &HFFFF THEN
-        r = r + 16
-        v = _SHR(v, 16)
-    END IF
-    IF v > &HFF THEN
-        r = r + 8
-        v = _SHR(v, 8)
-    END IF
-    IF v > &HF THEN
-        r = r + 4
-        v = _SHR(v, 4)
-    END IF
-    IF v > &H3 THEN
-        r = r + 2
-        v = _SHR(v, 2)
-    END IF
-    GetMostSignificantBitPosition = r + _SHR(v, 1)
-    $CHECKING:ON
-END FUNCTION
-
-
-' Heavily modified Vince's FFT routine - https://qb64phoenix.com/forum/showthread.php?tid=270&pid=2005#pid2005
+' This is a heavily modified version of Vince's FFT routine from https://qb64phoenix.com/forum/showthread.php?tid=270&pid=2005#pid2005
 ' This has been modified only for the purpose of calculating FFT data for audio analyzers. As such, it has multiple optimizations and shortcuts
-' This will only calculate FFT data for positive frequencies. Therefore, out_fft can have exactly half indexes of in_r
-' All arrays passed must be zero based
-SUB AnalyzerFFT (in_r() AS SINGLE, out_fft() AS SINGLE)
+' This will only calculate FFT data for positive frequencies. Therefore, fft_out can have exactly half indexes of real_in
+' All arrays passed must be zero based and must be a power of 2 size (... 512, 1024, 2048, 4096 ...)
+' real_in - 16-bit mono / stereo audio sample array
+' begin - the index in real_in where we should begin (if real_in is stereo, use 0 for left and 1 for right)
+' inc - the number of indexes we should skip (1 if real_in is mono, 2 if real_in is stereo)
+' fft_out - the output fft array (for positive frequencies only)
+' Returns the audio power level
+FUNCTION DoAnalyzerFFT! (real_in() AS INTEGER, begin AS LONG, inc AS LONG, fft_out() AS SINGLE)
     $CHECKING:OFF
-    '$DYNAMIC
-    STATIC AS SINGLE out_r(0 TO 0), out_i(0 TO 0) ' these are used internally by the FFT routine
+    STATIC AS SINGLE fft_real(0 TO 0), fft_imag(0 TO 0)
     STATIC rev_lookup(0 TO 0) AS LONG
-    '$STATIC
     STATIC AS LONG half_n, log2n
 
-    DIM AS SINGLE w_r, w_i, wm_r, wm_i, u_r, u_i, v_r, v_i, xpr, xpi, xmr, xmi, pi_m
-    DIM AS LONG rev, i, j, k, m, p, q
-    DIM AS LONG n, half_m
+    DIM AS SINGLE wr, wi, wmr, wmi, ur, ui, vr, vi, xpr, xpi, xmr, xmi, pi_m, power
+    DIM AS LONG rev, i, j, k, m, p, q, n, half_m
 
-    n = UBOUND(in_r) ' get the upper bound of the in_r
-    IF n <> UBOUND(out_r) THEN
-        ' These only need to be done once
-        REDIM AS SINGLE out_r(0 TO n), out_i(0 TO n) ' resize the arrays if needed
+    n = (UBOUND(real_in) + 1) \ inc
+    IF n <> UBOUND(fft_real) + 1 THEN
+        REDIM AS SINGLE fft_real(0 TO n - 1), fft_imag(0 TO n - 1)
 
-        n = n + 1 ' change to count
         half_n = _SHR(n, 1)
 
-        REDIM rev_lookup(0 TO half_n - 1) AS LONG ' resize and clear the bit-reversal LUT
+        REDIM rev_lookup(0 TO half_n - 1) AS LONG
 
-        log2n = GetMostSignificantBitPosition(half_n)
+        log2n = LOG(half_n) / LOG(2)
 
         i = 0
         DO WHILE i < half_n
             j = 0
             DO WHILE j < log2n
                 IF i AND _SHL(1, j) THEN rev_lookup(i) = rev_lookup(i) + _SHL(1, (log2n - 1 - j))
-
                 j = j + 1
             LOOP
-
             i = i + 1
         LOOP
-    ELSE
-        n = n + 1 ' change to count
     END IF
 
     i = 0
     DO WHILE i < half_n
-        rev = rev_lookup(i) ' use the LUT for bit-reversal
-        out_r(i) = in_r(2 * rev)
-        out_i(i) = in_r(2 * rev + 1)
-
+        rev = rev_lookup(i)
+        fft_real(i) = real_in(begin + 2 * rev * inc) / 32768!
+        fft_imag(i) = real_in(begin + (2 * rev + 1) * inc) / 32768!
+        power = power + fft_real(i) * fft_real(i) + fft_imag(i) * fft_imag(i)
         i = i + 1
     LOOP
+    DoAnalyzerFFT = power / n
 
     FOR i = 1 TO log2n
         m = _SHL(1, i)
         half_m = _SHR(m, 1)
-        pi_m = _PI(-2 / m)
-        wm_r = COS(pi_m)
-        wm_i = SIN(pi_m)
+        pi_m = _PI(-2! / m)
+        wmr = COS(pi_m)
+        wmi = SIN(pi_m)
 
         j = 0
         DO WHILE j < half_n
-            w_r = 1
-            w_i = 0
+            wr = 1
+            wi = 0
 
             k = 0
             DO WHILE k < half_m
                 p = j + k
                 q = p + half_m
 
-                u_r = w_r * out_r(q) - w_i * out_i(q)
-                u_i = w_r * out_i(q) + w_i * out_r(q)
-                v_r = out_r(p)
-                v_i = out_i(p)
+                ur = wr * fft_real(q) - wi * fft_imag(q)
+                ui = wr * fft_imag(q) + wi * fft_real(q)
+                vr = fft_real(p)
+                vi = fft_imag(p)
 
-                out_r(p) = v_r + u_r
-                out_i(p) = v_i + u_i
-                out_r(q) = v_r - u_r
-                out_i(q) = v_i - u_i
+                fft_real(p) = vr + ur
+                fft_imag(p) = vi + ui
+                fft_real(q) = vr - ur
+                fft_imag(q) = vi - ui
 
-                u_r = w_r
-                u_i = w_i
-                w_r = u_r * wm_r - u_i * wm_i
-                w_i = u_r * wm_i + u_i * wm_r
+                ur = wr
+                wr = ur * wmr - wi * wmi
+                wi = ur * wmi + wi * wmr
 
                 k = k + 1
             LOOP
-
             j = j + m
         LOOP
     NEXT
 
-    out_r(half_n) = out_r(0)
-    out_i(half_n) = out_i(0)
+    fft_real(half_n) = fft_real(0)
+    fft_imag(half_n) = fft_imag(0)
 
     i = 1
     DO WHILE i < half_n
-        out_r(half_n + i) = out_r(half_n - i)
-        out_i(half_n + i) = out_i(half_n - i)
-
+        fft_real(half_n + i) = fft_real(half_n - i)
+        fft_imag(half_n + i) = fft_imag(half_n - i)
         i = i + 1
     LOOP
 
     i = 0
     DO WHILE i < half_n
-        xpr = (out_r(i) + out_r(half_n + i)) * 0.5!
-        xpi = (out_i(i) + out_i(half_n + i)) * 0.5!
+        xpr = (fft_real(i) + fft_real(half_n + i)) * 0.5!
+        xpi = (fft_imag(i) + fft_imag(half_n + i)) * 0.5!
+        xmr = (fft_real(i) - fft_real(half_n + i)) * 0.5!
+        xmi = (fft_imag(i) - fft_imag(half_n + i)) * 0.5!
 
-        xmr = (out_r(i) - out_r(half_n + i)) * 0.5!
-        xmi = (out_i(i) - out_i(half_n + i)) * 0.5!
+        pi_m = _PI(2! * i / n)
+        wmr = COS(pi_m)
+        wmi = SIN(pi_m)
 
-        pi_m = _PI(2 * i / n)
-        wm_r = COS(pi_m)
-        wm_i = SIN(pi_m)
+        fft_real(i) = xpr + xpi * wmr - xmr * wmi
+        fft_imag(i) = xmi - xpi * wmi - xmr * wmr
 
-        out_r(i) = xpr + xpi * wm_r - xmr * wm_i
-        out_i(i) = xmi - xpi * wm_i - xmr * wm_r
-
-        out_fft(i) = SQR(out_r(i) * out_r(i) + out_i(i) * out_i(i))
-
+        fft_out(i) = SQR(fft_real(i) * fft_real(i) + fft_imag(i) * fft_imag(i))
         i = i + 1
     LOOP
-    $CHECKING:ON
-END SUB
+    $CHECKING:On
+END FUNCTION
 
 
 ' Draws a filled circle using _DEFAULTCOLOR
