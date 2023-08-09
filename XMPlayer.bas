@@ -17,14 +17,14 @@ $EXEICON:'./XMPlayer.ico'
 $VERSIONINFO:CompanyName=Samuel Gomes
 $VERSIONINFO:FileDescription=XMPlayer executable
 $VERSIONINFO:InternalName=XMPlayer
-$VERSIONINFO:LegalCopyright=Copyright (c) 2022, Samuel Gomes
+$VERSIONINFO:LegalCopyright=Copyright (c) 2023, Samuel Gomes
 $VERSIONINFO:LegalTrademarks=All trademarks are property of their respective owners
 $VERSIONINFO:OriginalFilename=XMPlayer.exe
 $VERSIONINFO:ProductName=XMPlayer
 $VERSIONINFO:Web=https://github.com/a740g
 $VERSIONINFO:Comments=https://github.com/a740g
-$VERSIONINFO:FILEVERSION#=4,0,0,0
-$VERSIONINFO:PRODUCTVERSION#=4,0,0,0
+$VERSIONINFO:FILEVERSION#=4,1,0,0
+$VERSIONINFO:PRODUCTVERSION#=4,1,0,0
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -94,8 +94,8 @@ END TYPE
 '-----------------------------------------------------------------------------------------------------------------------
 DIM SHARED Volume AS LONG, OsciType AS LONG, BackGroundType AS LONG
 DIM SHARED FreqFact AS LONG, MagFact AS SINGLE, VolBoost AS SINGLE
-REDIM SHARED AS SINGLE lSig(0 TO 0), lFFTr(0 TO 0), lFFTi(0 TO 0)
-REDIM SHARED AS SINGLE rSig(0 TO 0), rFFTr(0 TO 0), rFFTi(0 TO 0)
+REDIM SHARED AS SINGLE lSig(0 TO 0), lFFT(0 TO 0) ' left channel FP32 sample and FFT data
+REDIM SHARED AS SINGLE rSig(0 TO 0), rFFT(0 TO 0) ' right channel FP32 sample and FFT data
 DIM SHARED Stars(1 TO STAR_COUNT) AS StarType
 DIM SHARED CircleWaves(1 TO CIRCLE_WAVE_COUNT) AS CircleWaveType
 '-----------------------------------------------------------------------------------------------------------------------
@@ -167,8 +167,8 @@ FUNCTION OnPlaySong%% (fileName AS STRING)
     END IF
 
     ' Setup the FFT arrays
-    REDIM AS SINGLE lSig(0 TO __XMPPlayer.soundBufferFrames - 1), lFFTr(0 TO __XMPPlayer.soundBufferFrames - 1), lFFTi(0 TO __XMPPlayer.soundBufferFrames - 1)
-    REDIM AS SINGLE rSig(0 TO __XMPPlayer.soundBufferFrames - 1), rFFTr(0 TO __XMPPlayer.soundBufferFrames - 1), rFFTi(0 TO __XMPPlayer.soundBufferFrames - 1)
+    REDIM AS SINGLE lSig(0 TO __XMPPlayer.soundBufferFrames - 1), lFFT(0 TO __XMPPlayer.soundBufferFrames \ 2 - 1)
+    REDIM AS SINGLE rSig(0 TO __XMPPlayer.soundBufferFrames - 1), rFFT(0 TO __XMPPlayer.soundBufferFrames \ 2 - 1)
 
     ' Set the app title to display the file name
     DIM tuneTitle AS STRING: tuneTitle = XMP_GetTuneName
@@ -282,19 +282,17 @@ SUB DrawVisualization
     SHARED __XMPPlayer AS __XMPPlayerType ' we are using this only to access the library internals to draw the analyzer
     SHARED __XMPSoundBuffer() AS INTEGER
 
-    DIM AS LONG i, upperBound
-    DIM power AS SINGLE
-
     ' Fill the FFT arrays with sample data
-    upperBound = __XMPPlayer.soundBufferFrames - 1
-    FOR i = 0 TO upperBound
+    DIM power AS SINGLE, i AS LONG: i = 0
+    DO WHILE i < __XMPPlayer.soundBufferFrames
         lSig(i) = __XMPSoundBuffer(XMP_SOUND_BUFFER_CHANNELS * i) / 32768!
         rSig(i) = __XMPSoundBuffer(XMP_SOUND_BUFFER_CHANNELS * i + 1) / 32768!
 
         power = power + lSig(i) * lSig(i) + rSig(i) * rSig(i) ' we'll use this to calculate the sound power right after the loop
-    NEXT
+        i = i + 1
+    LOOP
 
-    power = power / _SHL(__XMPPlayer.soundBufferFrames, 1) ' left shift because each frame has 2 samples (L & R)
+    power = power / __XMPPlayer.soundBufferSamples ' because each frame has 2 samples (L & R)
 
     CLS , Black ' first clear everything
 
@@ -329,7 +327,6 @@ SUB DrawVisualization
         LOCATE 19, 4: PRINT "F/f - FREQUENCY ZOOM IN / OUT";
         LOCATE 20, 4: PRINT "M/m - MAGNITUDE SCALE UP / DOWN";
     ELSE
-        LOCATE 19, 4: PRINT "                             ";
         LOCATE 20, 4: PRINT "V/v - ANALYZER AMPLITUDE UP / DOWN";
     END IF
     LOCATE 21, 4: PRINT "O|o - TOGGLE OSCILLATOR TYPE";
@@ -374,10 +371,9 @@ SUB DrawVisualization
 
     ' As the oscillators width is probably <> number of samples, we need to scale the x-position, same is with the amplitude (y-position)
     ' We'll also do the whole drawing using one loop instead of two to get better performance
-    upperBound = __XMPPlayer.soundBufferFrames - 1 ' -1 since we are counting from 0
-
-    FOR i = 0 TO upperBound
-        xp = 21 + (i * 599) \ upperBound ' 21 = x_start, 599 = oscillator_width
+    i = 0
+    DO WHILE i < __XMPPlayer.soundBufferFrames
+        xp = 21 + (i * 599) \ __XMPPlayer.soundBufferFrames ' 21 = x_start, 599 = oscillator_width
 
         yp = lSig(i) * VolBoost * 47
         c = 20 + ABS(yp) * 5 ' we're cheating here a bit to set the color using yp
@@ -388,7 +384,9 @@ SUB DrawVisualization
         c = 20 + ABS(yp) * 5 ' we're cheating here a bit to set the color using yp
         IF ABS(yp) > 47 THEN yp = 47 * SGN(yp) + 224 ELSE yp = yp + 224 ' 224 = y_start, 47 = oscillator_height
         LINE (xp, 224)-(xp, yp), _RGBA32(c, 255 - c, 0, 255)
-    NEXT
+
+        i = i + 1
+    LOOP
 
     RETURN
     '-------------------------------------------------------------------------------------------------------------------
@@ -405,35 +403,36 @@ SUB DrawVisualization
     text = STR$(_SNDRATE \ __XMPPlayer.soundBufferFrames) + " [Hz]"
     LOCATE 3, 2: PRINT text;
     LOCATE 11, 2: PRINT text;
-    text = STR$((__XMPPlayer.soundBufferFrames \ FreqFact) * _SNDRATE \ __XMPPlayer.soundBufferFrames) + " [Hz]"
+    DIM freqMax AS LONG: freqMax = __XMPPlayer.soundBufferFrames \ FreqFact
+    text = STR$(freqMax * _SNDRATE \ __XMPPlayer.soundBufferFrames) + " [Hz]"
     i = 79 - LEN(text)
     LOCATE 3, i: PRINT text;
     LOCATE 11, i: PRINT text;
 
     ' Do RFFT for both left and right channel
-    RFFT lFFTr(), lFFTi(), lSig()
-    RFFT rFFTr(), rFFTi(), rSig()
+    AnalyzerFFT lSig(), lFFT()
+    AnalyzerFFT rSig(), rFFT()
 
     ' As the oscillators width is probably <> frequency range, we need to scale the x-position, same is with the magnitude (y-position)
     ' We'll also do the whole drawing using one loop instead of two to get better performance
-    DIM barWidth AS LONG: barWidth = FreqFact \ 2
-    upperBound = __XMPPlayer.soundBufferFrames \ FreqFact
-
-    FOR i = 0 TO upperBound
-        xp = 21 + (i * FreqFact * (599 - barWidth)) \ __XMPPlayer.soundBufferFrames ' 21 = x_start, 599 = oscillator_width
+    DIM barWidth AS LONG: barWidth = _SHR(FreqFact, 1): i = 0
+    DO WHILE i < freqMax
+        xp = 21 + (i * 600 - barWidth) \ freqMax ' 21 = x_start, 599 = oscillator_width
 
         ' Draw the left one first
-        yp = MagFact * SQR(lFFTr(i) * lFFTr(i) + lFFTi(i) * lFFTi(i))
+        yp = MagFact * lFFT(i)
         IF yp > 95 THEN yp = 143 - 95 ELSE yp = 143 - yp ' 143 = y_start, 95 = oscillator_height
         c = 71 + (143 - yp) * 2 ' we're cheating here a bit to set the color using (y_start - yp)
         LINE (xp, 143)-(xp + barWidth, yp), _RGBA32(c, 255 - c, 0, 255), BF
 
         ' Then the right one
-        yp = MagFact * SQR(rFFTr(i) * rFFTr(i) + rFFTi(i) * rFFTi(i))
+        yp = MagFact * rFFT(i)
         IF yp > 95 THEN yp = 271 - 95 ELSE yp = 271 - yp ' 271 = y_start, 95 = oscillator_height
         c = 71 + (271 - yp) * 2 ' we're cheating here a bit to set the color using (y_start - yp)
         LINE (xp, 271)-(xp + barWidth, yp), _RGBA32(c, 255 - c, 0, 255), BF
-    NEXT
+
+        i = i + 1
+    LOOP
 
     RETURN
     '-------------------------------------------------------------------------------------------------------------------
@@ -571,10 +570,12 @@ FUNCTION OnSelectedFiles%%
 
     DIM j AS LONG: j = ParseOpenFileDialogList(ofdList, fileNames())
 
-    DIM i AS LONG: FOR i = 0 TO j - 1
+    DIM i AS LONG: i = 0
+    DO WHILE i < j
         e = OnPlaySong(fileNames(i))
-        IF e <> EVENT_PLAY THEN EXIT FOR
-    NEXT
+        IF e <> EVENT_PLAY THEN EXIT DO
+        i = i + 1
+    LOOP
 
     OnSelectedFiles = e
 END FUNCTION
@@ -802,6 +803,7 @@ END FUNCTION
 
 ' Gets a string form of the boolean value passed
 FUNCTION BoolToStr$ (expression AS LONG, style AS _UNSIGNED _BYTE)
+    $CHECKING:OFF
     SELECT CASE style
         CASE 1
             IF expression THEN BoolToStr = "On" ELSE BoolToStr = "Off"
@@ -812,49 +814,112 @@ FUNCTION BoolToStr$ (expression AS LONG, style AS _UNSIGNED _BYTE)
         CASE ELSE
             IF expression THEN BoolToStr = "True" ELSE BoolToStr = "False"
     END SELECT
+    $CHECKING:ON
 END FUNCTION
 
 
 ' Generates a random number between lo & hi
 FUNCTION GetRandomValue& (lo AS LONG, hi AS LONG)
+    $CHECKING:OFF
     GetRandomValue = lo + RND * (hi - lo)
+    $CHECKING:ON
 END FUNCTION
 
 
-' Vince's FFT routine - https://qb64phoenix.com/forum/showthread.php?tid=270&pid=2005#pid2005
-' Modified for efficiency and performance (a little). All arrays passed must be zero based
-SUB RFFT (out_r() AS SINGLE, out_i() AS SINGLE, in_r() AS SINGLE)
+' Calculates the position of the leftmost (most significant) bit that is set (1) in a given 32-bit unsigned integer i
+' Basically a fast log2(v)
+FUNCTION GetMostSignificantBitPosition~& (i AS _UNSIGNED LONG)
+    $CHECKING:OFF
+    DIM AS _UNSIGNED LONG r, v: v = i
+    IF v > &HFFFF THEN
+        r = r + 16
+        v = _SHR(v, 16)
+    END IF
+    IF v > &HFF THEN
+        r = r + 8
+        v = _SHR(v, 8)
+    END IF
+    IF v > &HF THEN
+        r = r + 4
+        v = _SHR(v, 4)
+    END IF
+    IF v > &H3 THEN
+        r = r + 2
+        v = _SHR(v, 2)
+    END IF
+    GetMostSignificantBitPosition = r + _SHR(v, 1)
+    $CHECKING:ON
+END FUNCTION
+
+
+' Heavily modified Vince's FFT routine - https://qb64phoenix.com/forum/showthread.php?tid=270&pid=2005#pid2005
+' This has been modified only for the purpose of calculating FFT data for audio analyzers. As such, it has multiple optimizations and shortcuts
+' This will only calculate FFT data for positive frequencies. Therefore, out_fft can have exactly half indexes of in_r
+' All arrays passed must be zero based
+SUB AnalyzerFFT (in_r() AS SINGLE, out_fft() AS SINGLE)
+    $CHECKING:OFF
+    '$DYNAMIC
+    STATIC AS SINGLE out_r(0 TO 0), out_i(0 TO 0) ' these are used internally by the FFT routine
+    STATIC rev_lookup(0 TO 0) AS LONG
+    '$STATIC
+    STATIC AS LONG half_n, log2n
+
     DIM AS SINGLE w_r, w_i, wm_r, wm_i, u_r, u_i, v_r, v_i, xpr, xpi, xmr, xmi, pi_m
-    DIM AS LONG log2n, rev, i, j, k, m, p, q
-    DIM AS LONG n, half_n
+    DIM AS LONG rev, i, j, k, m, p, q
+    DIM AS LONG n, half_m
 
-    n = UBOUND(in_r) + 1
-    half_n = n \ 2
-    log2n = LOG(half_n) / LOG(2)
+    n = UBOUND(in_r) ' get the upper bound of the in_r
+    IF n <> UBOUND(out_r) THEN
+        ' These only need to be done once
+        REDIM AS SINGLE out_r(0 TO n), out_i(0 TO n) ' resize the arrays if needed
 
-    FOR i = 0 TO half_n - 1
-        rev = 0
-        FOR j = 0 TO log2n - 1
-            IF i AND _SHL(1, j) THEN rev = rev + _SHL(1, (log2n - 1 - j))
-        NEXT
+        n = n + 1 ' change to count
+        half_n = _SHR(n, 1)
 
+        REDIM rev_lookup(0 TO half_n - 1) AS LONG ' resize and clear the bit-reversal LUT
+
+        log2n = GetMostSignificantBitPosition(half_n)
+
+        i = 0
+        DO WHILE i < half_n
+            j = 0
+            DO WHILE j < log2n
+                IF i AND _SHL(1, j) THEN rev_lookup(i) = rev_lookup(i) + _SHL(1, (log2n - 1 - j))
+
+                j = j + 1
+            LOOP
+
+            i = i + 1
+        LOOP
+    ELSE
+        n = n + 1 ' change to count
+    END IF
+
+    i = 0
+    DO WHILE i < half_n
+        rev = rev_lookup(i) ' use the LUT for bit-reversal
         out_r(i) = in_r(2 * rev)
         out_i(i) = in_r(2 * rev + 1)
-    NEXT
+
+        i = i + 1
+    LOOP
 
     FOR i = 1 TO log2n
         m = _SHL(1, i)
+        half_m = _SHR(m, 1)
         pi_m = _PI(-2 / m)
         wm_r = COS(pi_m)
         wm_i = SIN(pi_m)
 
-        FOR j = 0 TO half_n - 1 STEP m
+        j = 0
+        DO WHILE j < half_n
             w_r = 1
             w_i = 0
 
-            FOR k = 0 TO m \ 2 - 1
+            k = 0
+            DO WHILE k < half_m
                 p = j + k
-                q = p + (m \ 2)
+                q = p + half_m
 
                 u_r = w_r * out_r(q) - w_i * out_i(q)
                 u_i = w_r * out_i(q) + w_i * out_r(q)
@@ -870,19 +935,27 @@ SUB RFFT (out_r() AS SINGLE, out_i() AS SINGLE, in_r() AS SINGLE)
                 u_i = w_i
                 w_r = u_r * wm_r - u_i * wm_i
                 w_i = u_r * wm_i + u_i * wm_r
-            NEXT
-        NEXT
+
+                k = k + 1
+            LOOP
+
+            j = j + m
+        LOOP
     NEXT
 
     out_r(half_n) = out_r(0)
     out_i(half_n) = out_i(0)
 
-    FOR i = 1 TO half_n - 1
+    i = 1
+    DO WHILE i < half_n
         out_r(half_n + i) = out_r(half_n - i)
         out_i(half_n + i) = out_i(half_n - i)
-    NEXT
 
-    FOR i = 0 TO half_n - 1
+        i = i + 1
+    LOOP
+
+    i = 0
+    DO WHILE i < half_n
         xpr = (out_r(i) + out_r(half_n + i)) * 0.5!
         xpi = (out_i(i) + out_i(half_n + i)) * 0.5!
 
@@ -895,12 +968,12 @@ SUB RFFT (out_r() AS SINGLE, out_i() AS SINGLE, in_r() AS SINGLE)
 
         out_r(i) = xpr + xpi * wm_r - xmr * wm_i
         out_i(i) = xmi - xpi * wm_i - xmr * wm_r
-    NEXT
 
-    FOR i = 0 TO half_n - 1
-        out_r(half_n + i) = out_r(half_n - 1 - i)
-        out_i(half_n + i) = -out_i(half_n - 1 - i)
-    NEXT
+        out_fft(i) = SQR(out_r(i) * out_r(i) + out_i(i) * out_i(i))
+
+        i = i + 1
+    LOOP
+    $CHECKING:ON
 END SUB
 
 
@@ -908,6 +981,7 @@ END SUB
 ' cx, cy - circle center x, y
 ' R - circle radius
 SUB CircleFill (cx AS LONG, cy AS LONG, r AS LONG, c AS _UNSIGNED LONG)
+    $CHECKING:OFF
     DIM AS LONG radius, radiusError, X, Y
 
     radius = ABS(r)
@@ -921,8 +995,8 @@ SUB CircleFill (cx AS LONG, cy AS LONG, r AS LONG, c AS _UNSIGNED LONG)
 
     LINE (cx - X, cy)-(cx + X, cy), c, BF
 
-    WHILE X > Y
-        radiusError = radiusError + Y * 2 + 1
+    DO WHILE X > Y
+        radiusError = radiusError + _SHL(Y, 1) + 1
 
         IF radiusError >= 0 THEN
             IF X <> Y + 1 THEN
@@ -930,14 +1004,15 @@ SUB CircleFill (cx AS LONG, cy AS LONG, r AS LONG, c AS _UNSIGNED LONG)
                 LINE (cx - Y, cy + X)-(cx + Y, cy + X), c, BF
             END IF
             X = X - 1
-            radiusError = radiusError - X * 2
+            radiusError = radiusError - _SHL(X, 1)
         END IF
 
         Y = Y + 1
 
         LINE (cx - X, cy - Y)-(cx + X, cy - Y), c, BF
         LINE (cx - X, cy + Y)-(cx + X, cy + Y), c, BF
-    WEND
+    LOOP
+    $CHECKING:ON
 END SUB
 
 
@@ -973,8 +1048,8 @@ SUB UpdateAndDrawStars (stars() AS StarType, speed AS SINGLE)
         PSET (stars(i).p.x, stars(i).p.y), stars(i).c
 
         stars(i).p.z = stars(i).p.z + speed
-        stars(i).p.x = ((stars(i).p.x - (W / 2)) * (stars(i).p.z / 4096.0!)) + (W / 2)
-        stars(i).p.y = ((stars(i).p.y - (H / 2)) * (stars(i).p.z / 4096.0!)) + (H / 2)
+        stars(i).p.x = ((stars(i).p.x - _SHR(W, 1)) * (stars(i).p.z / 4096.0!)) + _SHR(W, 1)
+        stars(i).p.y = ((stars(i).p.y - _SHR(H, 1)) * (stars(i).p.z / 4096.0!)) + _SHR(H, 1)
     NEXT
 END SUB
 
@@ -998,6 +1073,7 @@ SUB InitializeCircleWaves (circleWaves() AS CircleWaveType)
         circleWaves(i).c.b = GetRandomValue(0, 128)
     NEXT
 END SUB
+
 
 SUB UpdateAndDrawCircleWaves (circleWaves() AS CircleWaveType, size AS SINGLE)
     DIM L AS LONG: L = LBOUND(circleWaves)

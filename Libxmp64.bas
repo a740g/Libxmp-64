@@ -13,8 +13,7 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
     ' Rounds a number down to a power of 2 (this time the non-noobie way :)
     FUNCTION __XMP_RoundDownToPowerOf2~& (i AS _UNSIGNED LONG)
         $CHECKING:OFF
-        DIM j AS _UNSIGNED LONG
-        j = i
+        DIM j AS _UNSIGNED LONG: j = i
         j = j OR _SHR(j, 1)
         j = j OR _SHR(j, 2)
         j = j OR _SHR(j, 4)
