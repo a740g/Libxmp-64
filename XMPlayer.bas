@@ -23,8 +23,8 @@ $VERSIONINFO:OriginalFilename=XMPlayer.exe
 $VERSIONINFO:ProductName=XMPlayer
 $VERSIONINFO:Web=https://github.com/a740g
 $VERSIONINFO:Comments=https://github.com/a740g
-$VERSIONINFO:FILEVERSION#=4,1,0,0
-$VERSIONINFO:PRODUCTVERSION#=4,1,0,0
+$VERSIONINFO:FILEVERSION#=4,1,1,0
+$VERSIONINFO:PRODUCTVERSION#=4,1,1,0
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -924,7 +924,7 @@ FUNCTION DoAnalyzerFFT! (real_in() AS INTEGER, begin AS LONG, inc AS LONG, fft_o
         fft_out(i) = SQR(fft_real(i) * fft_real(i) + fft_imag(i) * fft_imag(i))
         i = i + 1
     LOOP
-    $CHECKING:On
+    $CHECKING:ON
 END FUNCTION
 
 

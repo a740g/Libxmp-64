@@ -115,6 +115,7 @@ $IF LIBXMP64_BI = UNDEFINED THEN
         frameInfo AS xmp_frame_info ' current frame info. This is used to check if we are looping or playback is done
         testInfo AS xmp_test_info ' this will have the MOD name and type
         errorCode AS LONG ' this hold the error code from a previous XMP function
+        soundBufferMEM AS _MEM ' this is just a pointer to __XMPSoundBuffer() and used for quick memfills
         soundBufferBytes AS _UNSIGNED LONG ' size of the render buffer in bytes
         soundBufferSamples AS _UNSIGNED LONG ' size of the rendered buffer in samples
         soundBufferFrames AS _UNSIGNED LONG ' size of the render buffer in frames

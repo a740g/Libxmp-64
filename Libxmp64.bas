@@ -64,6 +64,7 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
         __XMPPlayer.soundBufferSamples = __XMPPlayer.soundBufferFrames * XMP_SOUND_BUFFER_CHANNELS ' buffer samples
         __XMPPlayer.soundBufferBytes = __XMPPlayer.soundBufferSamples * XMP_SOUND_BUFFER_SAMPLE_SIZE ' buffer bytes
         REDIM __XMPSoundBuffer(0 TO __XMPPlayer.soundBufferSamples - 1) AS INTEGER
+        __XMPPlayer.soundBufferMEM = _MEM(__XMPSoundBuffer()) ' get the MEM block for the sound buffer
 
         ' Set some player properties
         ' These makes the sound quality much better when devices have sample rates other than 44100
@@ -197,6 +198,9 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
             _SNDRAWDONE __XMPPlayer.soundHandle ' Sumbit whatever is remaining in the raw buffer for playback
             _SNDCLOSE __XMPPlayer.soundHandle ' Close QB64 sound pipe
 
+            ' Free the mixer buffer MEM block
+            _MEMFREE __XMPPlayer.soundBufferMEM
+
             ' Cleanup XMP
             xmp_end_player __XMPPlayer.context
             xmp_release_module __XMPPlayer.context
@@ -267,7 +271,7 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
         IF __XMPPlayer.context = 0 OR NOT __XMPPlayer.isPlaying OR __XMPPlayer.isPaused OR _SNDRAWLEN(__XMPPlayer.soundHandle) > bufferTimeSecs THEN EXIT SUB
 
         ' Clear the render buffer
-        REDIM __XMPSoundBuffer(0 TO __XMPPlayer.soundBufferSamples - 1) AS INTEGER
+        _MEMFILL __XMPPlayer.soundBufferMEM, __XMPPlayer.soundBufferMEM.OFFSET, __XMPPlayer.soundBufferMEM.SIZE, 0 AS _BYTE
 
         ' Render some samples to the buffer
         __XMPPlayer.errorCode = xmp_play_buffer(__XMPPlayer.context, __XMPSoundBuffer(0), __XMPPlayer.soundBufferBytes, 0)
