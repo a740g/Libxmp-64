@@ -198,13 +198,11 @@ FUNCTION OnPlaySong%% (fileName AS STRING)
                 XMP_Pause NOT XMP_IsPaused
 
             CASE 43, 61 ' + = volume up
-                Volume = Volume + 1
-                XMP_SetVolume Volume
+                XMP_SetVolume Volume + 1
                 Volume = XMP_GetVolume
 
             CASE 45, 95 ' - _ volume down
-                Volume = Volume - 1
-                XMP_SetVolume Volume
+                XMP_SetVolume Volume - 1
                 Volume = XMP_GetVolume
 
             CASE 76, 108 ' L - toggle looping
@@ -976,7 +974,7 @@ SUB InitializeStars (stars() AS StarType)
     DIM i AS LONG: FOR i = L TO U
         stars(i).p.x = GetRandomValue(0, W - 1)
         stars(i).p.y = GetRandomValue(0, H - 1)
-        stars(i).p.z = 4096.0!
+        stars(i).p.z = 4096!
         stars(i).c = _RGBA32(GetRandomValue(64, 255), GetRandomValue(64, 255), GetRandomValue(64, 255), 255)
     NEXT
 END SUB
@@ -992,15 +990,15 @@ SUB UpdateAndDrawStars (stars() AS StarType, speed AS SINGLE)
         IF stars(i).p.x < 0 OR stars(i).p.x >= W OR stars(i).p.y < 0 OR stars(i).p.y >= H THEN
             stars(i).p.x = GetRandomValue(0, W - 1)
             stars(i).p.y = GetRandomValue(0, H - 1)
-            stars(i).p.z = 4096.0!
+            stars(i).p.z = 4096!
             stars(i).c = _RGBA32(GetRandomValue(64, 255), GetRandomValue(64, 255), GetRandomValue(64, 255), 255)
         END IF
 
         PSET (stars(i).p.x, stars(i).p.y), stars(i).c
 
         stars(i).p.z = stars(i).p.z + speed
-        stars(i).p.x = ((stars(i).p.x - _SHR(W, 1)) * (stars(i).p.z / 4096.0!)) + _SHR(W, 1)
-        stars(i).p.y = ((stars(i).p.y - _SHR(H, 1)) * (stars(i).p.z / 4096.0!)) + _SHR(H, 1)
+        stars(i).p.x = ((stars(i).p.x - _SHR(W, 1)) * (stars(i).p.z / 4096!)) + _SHR(W, 1)
+        stars(i).p.y = ((stars(i).p.y - _SHR(H, 1)) * (stars(i).p.z / 4096!)) + _SHR(H, 1)
     NEXT
 END SUB
 
@@ -1012,13 +1010,13 @@ SUB InitializeCircleWaves (circleWaves() AS CircleWaveType)
     DIM H AS LONG: H = _HEIGHT
 
     DIM i AS LONG: FOR i = L TO U
-        circleWaves(i).a = 0.0!
+        circleWaves(i).a = 0!
         circleWaves(i).r = GetRandomValue(10, 40)
         circleWaves(i).p.x = GetRandomValue(circleWaves(i).r, W - circleWaves(i).r)
         circleWaves(i).p.y = GetRandomValue(circleWaves(i).r, H - circleWaves(i).r)
-        circleWaves(i).v.x = (RND - RND) / 3.0!
-        circleWaves(i).v.y = (RND - RND) / 3.0!
-        circleWaves(i).s = GetRandomValue(1, 100) / 4000.0!
+        circleWaves(i).v.x = (RND - RND) / 3!
+        circleWaves(i).v.y = (RND - RND) / 3!
+        circleWaves(i).s = GetRandomValue(1, 100) / 4000!
         circleWaves(i).c.r = GetRandomValue(0, 128)
         circleWaves(i).c.g = GetRandomValue(0, 128)
         circleWaves(i).c.b = GetRandomValue(0, 128)
@@ -1034,26 +1032,26 @@ SUB UpdateAndDrawCircleWaves (circleWaves() AS CircleWaveType, size AS SINGLE)
 
     DIM i AS LONG: FOR i = U TO L STEP -1
         circleWaves(i).a = circleWaves(i).a + circleWaves(i).s
-        circleWaves(i).r = circleWaves(i).r + circleWaves(i).s * 10.0!
+        circleWaves(i).r = circleWaves(i).r + circleWaves(i).s * 10!
         circleWaves(i).p.x = circleWaves(i).p.x + circleWaves(i).v.x
         circleWaves(i).p.y = circleWaves(i).p.y + circleWaves(i).v.y
 
-        IF circleWaves(i).a >= 1.0! THEN circleWaves(i).s = circleWaves(i).s * -1
+        IF circleWaves(i).a >= 1 THEN circleWaves(i).s = circleWaves(i).s * -1!
 
-        IF circleWaves(i).a <= 0.0! THEN
-            circleWaves(i).a = 0.0!
+        IF circleWaves(i).a <= 0 THEN
+            circleWaves(i).a = 0!
             circleWaves(i).r = GetRandomValue(10, 40)
             circleWaves(i).p.x = GetRandomValue(circleWaves(i).r, W - circleWaves(i).r)
             circleWaves(i).p.y = GetRandomValue(circleWaves(i).r, H - circleWaves(i).r)
-            circleWaves(i).v.x = (RND - RND) / 3.0!
-            circleWaves(i).v.y = (RND - RND) / 3.0!
-            circleWaves(i).s = GetRandomValue(1, 100) / 4000.0!
+            circleWaves(i).v.x = (RND - RND) / 3!
+            circleWaves(i).v.y = (RND - RND) / 3!
+            circleWaves(i).s = GetRandomValue(1, 100) / 4000!
             circleWaves(i).c.r = GetRandomValue(0, 128)
             circleWaves(i).c.g = GetRandomValue(0, 128)
             circleWaves(i).c.b = GetRandomValue(0, 128)
         END IF
 
-        CircleFill circleWaves(i).p.x, circleWaves(i).p.y, circleWaves(i).r + circleWaves(i).r * size, _RGBA32(circleWaves(i).c.r, circleWaves(i).c.g, circleWaves(i).c.b, 255 * circleWaves(i).a)
+        CircleFill circleWaves(i).p.x, circleWaves(i).p.y, circleWaves(i).r + circleWaves(i).r * size, _RGBA32(circleWaves(i).c.r, circleWaves(i).c.g, circleWaves(i).c.b, 255! * circleWaves(i).a)
     NEXT
 END SUB
 '-----------------------------------------------------------------------------------------------------------------------

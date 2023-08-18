@@ -58,14 +58,6 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
             EXIT FUNCTION
         END IF
 
-        ' Allocate a 40 ms mixer buffer and ensure we round down to power of 2
-        ' Power of 2 above is required by most FFT functions
-        __XMPPlayer.soundBufferFrames = __XMP_RoundDownToPowerOf2(_SNDRATE * XMP_SOUND_BUFFER_TIME_DEFAULT * XMP_SOUND_BUFFER_TIME_DEFAULT) ' buffer frames
-        __XMPPlayer.soundBufferSamples = __XMPPlayer.soundBufferFrames * XMP_SOUND_BUFFER_CHANNELS ' buffer samples
-        __XMPPlayer.soundBufferBytes = __XMPPlayer.soundBufferSamples * XMP_SOUND_BUFFER_SAMPLE_SIZE ' buffer bytes
-        REDIM __XMPSoundBuffer(0 TO __XMPPlayer.soundBufferSamples - 1) AS INTEGER
-        __XMPPlayer.soundBufferMEM = _MEM(__XMPSoundBuffer()) ' get the MEM block for the sound buffer
-
         ' Set some player properties
         ' These makes the sound quality much better when devices have sample rates other than 44100
         __XMPPlayer.errorCode = xmp_set_player(__XMPPlayer.context, XMP_PLAYER_INTERP, XMP_INTERP_SPLINE)
@@ -82,6 +74,14 @@ $IF LIBXMP64_BAS = UNDEFINED THEN
             __XMPPlayer.context = 0
             EXIT FUNCTION
         END IF
+
+        ' Allocate a 40 ms mixer buffer and ensure we round down to power of 2
+        ' Power of 2 above is required by most FFT functions
+        __XMPPlayer.soundBufferFrames = __XMP_RoundDownToPowerOf2(_SNDRATE * XMP_SOUND_BUFFER_TIME_DEFAULT * XMP_SOUND_BUFFER_TIME_DEFAULT) ' buffer frames
+        __XMPPlayer.soundBufferSamples = __XMPPlayer.soundBufferFrames * XMP_SOUND_BUFFER_CHANNELS ' buffer samples
+        __XMPPlayer.soundBufferBytes = __XMPPlayer.soundBufferSamples * XMP_SOUND_BUFFER_SAMPLE_SIZE ' buffer bytes
+        REDIM __XMPSoundBuffer(0 TO __XMPPlayer.soundBufferSamples - 1) AS INTEGER
+        __XMPPlayer.soundBufferMEM = _MEM(__XMPSoundBuffer()) ' get the MEM block for the sound buffer
 
         ' Get the frame information
         xmp_get_frame_info __XMPPlayer.context, __XMPPlayer.frameInfo
