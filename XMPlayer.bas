@@ -740,13 +740,11 @@ END FUNCTION
 
 ' Load a file from a file or URL
 FUNCTION LoadFile$ (PathOrURL AS STRING)
-    SELECT CASE UCASE$(GetDriveOrSchemeFromPathOrURL(PathOrURL))
-        CASE "HTTP:", "HTTPS:", "FTP:"
-            LoadFile = LoadFileFromURL(PathOrURL)
-
-        CASE ELSE
-            LoadFile = LoadFileFromDisk(PathOrURL)
-    END SELECT
+    IF LEN(GetDriveOrSchemeFromPathOrURL(PathOrURL)) > 2 THEN
+        LoadFile = LoadFileFromURL(PathOrURL)
+    ELSE
+        LoadFile = LoadFileFromDisk(PathOrURL)
+    END IF
 END FUNCTION
 
 
