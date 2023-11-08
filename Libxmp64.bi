@@ -16,8 +16,8 @@ $IF LIBXMP64_BI = UNDEFINED THEN
     '   1. The TYPES below are aligned for x86-64 arch. Padded with extra bytes wherever needed
     '   2. 32-bit machines and OSes are not mainstream anymore
     '   3. I clearly lack the motivation for adding 32-bit support. If anyone wants to do it, then please open a PR!
-    $IF VERSION < 3.8 OR 32BIT THEN
-            $ERROR This requires the latest 64-bit version of QB64-PE from https://github.com/QB64-Phoenix-Edition/QB64pe/releases/latest
+    $IF VERSION < 3.9.1 OR 32BIT THEN
+            $ERROR 'This requires the latest 64-bit version of QB64-PE from https://github.com/QB64-Phoenix-Edition/QB64pe/releases/latest'
     $END IF
     '-------------------------------------------------------------------------------------------------------------------
 

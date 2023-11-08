@@ -14,17 +14,17 @@ $RESIZE:SMOOTH
 $UNSTABLE:HTTP
 $COLOR:32
 $EXEICON:'./XMPlayer.ico'
-$VERSIONINFO:CompanyName=Samuel Gomes
-$VERSIONINFO:FileDescription=XMPlayer executable
-$VERSIONINFO:InternalName=XMPlayer
-$VERSIONINFO:LegalCopyright=Copyright (c) 2023, Samuel Gomes
-$VERSIONINFO:LegalTrademarks=All trademarks are property of their respective owners
-$VERSIONINFO:OriginalFilename=XMPlayer.exe
-$VERSIONINFO:ProductName=XMPlayer
-$VERSIONINFO:Web=https://github.com/a740g
-$VERSIONINFO:Comments=https://github.com/a740g
-$VERSIONINFO:FILEVERSION#=4,1,1,0
-$VERSIONINFO:PRODUCTVERSION#=4,1,1,0
+$VERSIONINFO:CompanyName='Samuel Gomes'
+$VERSIONINFO:FileDescription='XMPlayer executable'
+$VERSIONINFO:InternalName='XMPlayer'
+$VERSIONINFO:LegalCopyright='Copyright (c) 2023, Samuel Gomes'
+$VERSIONINFO:LegalTrademarks='All trademarks are property of their respective owners'
+$VERSIONINFO:OriginalFilename='XMPlayer.exe'
+$VERSIONINFO:ProductName='XMPlayer'
+$VERSIONINFO:Web='https://github.com/a740g'
+$VERSIONINFO:Comments='https://github.com/a740g'
+$VERSIONINFO:FILEVERSION#=4,1,2,0
+$VERSIONINFO:PRODUCTVERSION#=4,1,2,0
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
