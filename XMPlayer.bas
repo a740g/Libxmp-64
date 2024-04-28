@@ -1,6 +1,6 @@
 '-----------------------------------------------------------------------------------------------------------------------
 ' Demo player for Libxmp
-' Copyright (c) 2023 Samuel Gomes
+' Copyright (c) 2024 Samuel Gomes
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -17,14 +17,14 @@ $EXEICON:'./XMPlayer.ico'
 $VERSIONINFO:CompanyName='Samuel Gomes'
 $VERSIONINFO:FileDescription='XMPlayer executable'
 $VERSIONINFO:InternalName='XMPlayer'
-$VERSIONINFO:LegalCopyright='Copyright (c) 2023, Samuel Gomes'
+$VERSIONINFO:LegalCopyright='Copyright (c) 2024, Samuel Gomes'
 $VERSIONINFO:LegalTrademarks='All trademarks are property of their respective owners'
 $VERSIONINFO:OriginalFilename='XMPlayer.exe'
 $VERSIONINFO:ProductName='XMPlayer'
 $VERSIONINFO:Web='https://github.com/a740g'
 $VERSIONINFO:Comments='https://github.com/a740g'
-$VERSIONINFO:FILEVERSION#=4,1,2,0
-$VERSIONINFO:PRODUCTVERSION#=4,1,2,0
+$VERSIONINFO:FILEVERSION#=4,2,0,0
+$VERSIONINFO:PRODUCTVERSION#=4,2,0,0
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -37,21 +37,21 @@ $VERSIONINFO:PRODUCTVERSION#=4,1,2,0
 ' CONSTANTS
 '-----------------------------------------------------------------------------------------------------------------------
 ' Common constants
-CONST FALSE = 0, TRUE = NOT FALSE
+CONST FALSE%% = 0%%, TRUE%% = NOT FALSE
 ' Some important constants
 CONST APP_NAME = "XMPlayer"
-CONST FRAME_RATE_MAX = 120
+CONST FRAME_RATE_MAX& = 60&
 ' Program events
-CONST EVENT_NONE = 0 ' idle
-CONST EVENT_QUIT = 1 ' user wants to quit
-CONST EVENT_CMDS = 2 ' process command line
-CONST EVENT_LOAD = 3 ' user want to load files
-CONST EVENT_DROP = 4 ' user dropped files
-CONST EVENT_PLAY = 5 ' play next song
-CONST EVENT_HTTP = 6 ' user wants to downloads and play random tunes from modarchive.org
+CONST EVENT_NONE%% = 0%% ' idle
+CONST EVENT_QUIT%% = 1%% ' user wants to quit
+CONST EVENT_CMDS%% = 2%% ' process command line
+CONST EVENT_LOAD%% = 3%% ' user want to load files
+CONST EVENT_DROP%% = 4%% ' user dropped files
+CONST EVENT_PLAY%% = 5%% ' play next song
+CONST EVENT_HTTP%% = 6%% ' user wants to downloads and play random tunes from modarchive.org
 ' Background constants
-CONST STAR_COUNT = 512 ' the maximum stars that we can show
-CONST CIRCLE_WAVE_COUNT = 32
+CONST STAR_COUNT& = 512& ' the maximum stars that we can show
+CONST CIRCLE_WAVE_COUNT& = 32&
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -187,7 +187,7 @@ FUNCTION OnPlaySong%% (fileName AS STRING)
     XMP_SetVolume Volume
 
     DO
-        XMP_Update XMP_SOUND_BUFFER_TIME_DEFAULT
+        XMP_Update
 
         DrawVisualization '  clears, draws and then display the info screen
 
@@ -506,7 +506,7 @@ FUNCTION OnCommandLine%%
             + "Syntax: " + APP_NAME + " [filespec]" + CHR$(13) _
             + "    /?: Shows this message" + STRING$(2, 13) _
             + "Note: Wildcards are supported" + STRING$(2, 13) _
-            + "Copyright (c) 2023, Samuel Gomes" + STRING$(2, 13) _
+            + "Copyright (c) 2024, Samuel Gomes" + STRING$(2, 13) _
             + "https://github.com/a740g/", "info"
 
         e = EVENT_QUIT
@@ -852,8 +852,8 @@ FUNCTION DoAnalyzerFFT! (real_in() AS INTEGER, begin AS LONG, inc AS LONG, fft_o
     i = 0
     DO WHILE i < half_n
         rev = rev_lookup(i)
-        fft_real(i) = real_in(begin + 2 * rev * inc) / 32768!
-        fft_imag(i) = real_in(begin + (2 * rev + 1) * inc) / 32768!
+        fft_real(i) = real_in(begin + 2 * rev * inc) * XMP_I16_TO_F32_MULTIPLIER
+        fft_imag(i) = real_in(begin + (2 * rev + 1) * inc) * XMP_I16_TO_F32_MULTIPLIER
         power = power + fft_real(i) * fft_real(i) + fft_imag(i) * fft_imag(i)
         i = i + 1
     LOOP

@@ -1,8 +1,8 @@
 '-----------------------------------------------------------------------------------------------------------------------
 ' Libxmp bindings for QB64-PE (minimalistic)
-' Copyright (c) 2023 Samuel Gomes
+' Copyright (c) 2024 Samuel Gomes
 '
-' This mostly has the glue code that make working with Libxmp and QB64-PE easy
+' This mostly has the glue code that makes working with Libxmp and QB64-PE easy
 '-----------------------------------------------------------------------------------------------------------------------
 
 $INCLUDEONCE
@@ -74,9 +74,9 @@ FUNCTION __XMP_DoPostInit%%
         EXIT FUNCTION
     END IF
 
-    ' Allocate a 40 ms mixer buffer and ensure we round down to power of 2
     ' Power of 2 above is required by most FFT functions
-    __XMPPlayer.soundBufferFrames = __XMP_RoundDownToPowerOf2(_SNDRATE * XMP_SOUND_BUFFER_TIME_DEFAULT * XMP_SOUND_BUFFER_TIME_DEFAULT) ' buffer frames
+    __XMPPlayer.soundBufferFrames = __XMP_RoundDownToPowerOf2(_SNDRATE * XMP_SOUND_BUFFER_TIME_DEFAULT) ' buffer frames
+    __XMPPlayer.soundBufferTime = __XMPPlayer.soundBufferFrames / _SNDRATE ' this is how much time we are really buffering
     __XMPPlayer.soundBufferSamples = __XMPPlayer.soundBufferFrames * XMP_SOUND_BUFFER_CHANNELS ' buffer samples
     __XMPPlayer.soundBufferBytes = __XMPPlayer.soundBufferSamples * XMP_SOUND_BUFFER_SAMPLE_SIZE ' buffer bytes
     REDIM __XMPSoundBuffer(0 TO __XMPPlayer.soundBufferSamples - 1) AS INTEGER
@@ -261,38 +261,41 @@ END SUB
 
 ' This handles playback and keeping track of the render buffer
 ' You can call this as frequenctly as you want. The routine will simply exit if nothing is to be done
-SUB XMP_Update (bufferTimeSecs AS SINGLE)
+SUB XMP_Update
     $CHECKING:OFF
     SHARED __XMPPlayer AS __XMPPlayerType
     SHARED __XMPSoundBuffer() AS INTEGER
 
-    ' If song is done, paused or we already have enough samples to play then exit
-    IF __XMPPlayer.context = 0 OR (NOT __XMPPlayer.isPlaying) OR __XMPPlayer.isPaused OR _SNDRAWLEN(__XMPPlayer.soundHandle) > bufferTimeSecs THEN EXIT SUB
+    ' If we are not initialized or song is done or we are paused, then exit
+    IF __XMPPlayer.context = 0 OR (NOT __XMPPlayer.isPlaying) OR __XMPPlayer.isPaused THEN EXIT SUB
 
-    ' Clear the render buffer
-    _MEMFILL __XMPPlayer.soundBufferMEM, __XMPPlayer.soundBufferMEM.OFFSET, __XMPPlayer.soundBufferMEM.SIZE, 0 AS _BYTE
+    ' Loop and fill the buffer until we have bufferTimeSecs worth of samples frames to play
+    WHILE _SNDRAWLEN(__XMPPlayer.soundHandle) < __XMPPlayer.soundBufferTime
+        ' Clear the render buffer
+        _MEMFILL __XMPPlayer.soundBufferMEM, __XMPPlayer.soundBufferMEM.OFFSET, __XMPPlayer.soundBufferMEM.SIZE, 0 AS _BYTE
 
-    ' Render some samples to the buffer
-    __XMPPlayer.errorCode = xmp_play_buffer(__XMPPlayer.context, __XMPSoundBuffer(0), __XMPPlayer.soundBufferBytes, 0)
+        ' Render some samples to the buffer
+        __XMPPlayer.errorCode = xmp_play_buffer(__XMPPlayer.context, __XMPSoundBuffer(0), __XMPPlayer.soundBufferBytes, 0)
 
-    ' Get the frame information
-    xmp_get_frame_info __XMPPlayer.context, __XMPPlayer.frameInfo
+        ' Get the frame information
+        xmp_get_frame_info __XMPPlayer.context, __XMPPlayer.frameInfo
 
-    ' Set playing flag to false if we are not looping and loop count > 0
-    IF __XMPPlayer.isLooping THEN
-        __XMPPlayer.isPlaying = __XMPPlayer.isLooping
-    ELSE
-        __XMPPlayer.isPlaying = (__XMPPlayer.frameInfo.loop_count < 1)
-        ' Exit before any samples are queued
-        IF NOT __XMPPlayer.isPlaying THEN EXIT SUB
-    END IF
+        ' Set playing flag to false if we are not looping and loop count > 0
+        IF __XMPPlayer.isLooping THEN
+            __XMPPlayer.isPlaying = __XMPPlayer.isLooping
+        ELSE
+            __XMPPlayer.isPlaying = (__XMPPlayer.frameInfo.loop_count < 1)
+            ' Exit before any samples are queued
+            IF NOT __XMPPlayer.isPlaying THEN EXIT SUB
+        END IF
 
-    ' Push the samples to the sound pipe
-    DIM i AS _UNSIGNED LONG
-    DO WHILE i < __XMPPlayer.soundBufferSamples
-        _SNDRAW __XMPSoundBuffer(i) / 32768!, __XMPSoundBuffer(i + 1) / 32768!, __XMPPlayer.soundHandle
-        i = i + XMP_SOUND_BUFFER_CHANNELS
-    LOOP
+        ' Push the samples to the sound pipe
+        DIM i AS _UNSIGNED LONG: i = 0
+        DO WHILE i < __XMPPlayer.soundBufferSamples
+            _SNDRAW __XMPSoundBuffer(i) * XMP_I16_TO_F32_MULTIPLIER, __XMPSoundBuffer(i + 1) * XMP_I16_TO_F32_MULTIPLIER, __XMPPlayer.soundHandle
+            i = i + XMP_SOUND_BUFFER_CHANNELS
+        LOOP
+    WEND
     $CHECKING:ON
 END SUB
 
