@@ -194,6 +194,9 @@ FUNCTION OnPlaySong%% (fileName AS STRING)
         k = _KEYHIT
 
         SELECT CASE k
+            CASE 27
+                EXIT DO
+
             CASE 32 ' SPC - toggle pause
                 XMP_Pause NOT XMP_IsPaused
 
@@ -265,7 +268,7 @@ FUNCTION OnPlaySong%% (fileName AS STRING)
         END IF
 
         _LIMIT FRAME_RATE_MAX
-    LOOP UNTIL NOT XMP_IsPlaying OR k = 27
+    LOOP WHILE XMP_IsPlaying
 
     XMP_Stop
 
