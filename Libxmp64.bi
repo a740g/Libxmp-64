@@ -38,7 +38,8 @@ CONST XMP_CHANNEL_INFO_ARRAY_SIZE = XMP_CHANNEL_INFO_SIZE * XMP_MAX_CHANNELS
 CONST XMP_SOUND_BUFFER_CHANNELS = 2 ' 2 channel (stereo)
 CONST XMP_SOUND_BUFFER_SAMPLE_SIZE = 2 ' 2 bytes (16-bits signed integer)
 CONST XMP_SOUND_BUFFER_FRAME_SIZE = XMP_SOUND_BUFFER_SAMPLE_SIZE * XMP_SOUND_BUFFER_CHANNELS
-CONST XMP_SOUND_BUFFER_TIME_DEFAULT! = 0.04! ' we will try to ensure we have this amount of time left in the QB64 sound pipe
+CONST XMP_SOUND_BUFFER_CHUNKS = 2 ' chunks per buffer (should be power of 2)
+CONST XMP_SOUND_BUFFER_TIME_DEFAULT! = 0.08! ' we will try to ensure we have this amount of time left in the QB64 sound pipe
 
 CONST XMP_I16_TO_F32_MULTIPLIER! = 0.000030517578125! ' this is used to avoid division whereever possible
 

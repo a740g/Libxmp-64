@@ -75,8 +75,8 @@ FUNCTION __XMP_DoPostInit%%
     END IF
 
     ' Power of 2 above is required by most FFT functions
-    __XMPPlayer.soundBufferFrames = __XMP_RoundDownToPowerOf2(_SNDRATE * XMP_SOUND_BUFFER_TIME_DEFAULT) ' buffer frames
-    __XMPPlayer.soundBufferTime = __XMPPlayer.soundBufferFrames / _SNDRATE ' this is how much time we are really buffering
+    __XMPPlayer.soundBufferFrames = __XMP_RoundDownToPowerOf2(_SNDRATE * XMP_SOUND_BUFFER_TIME_DEFAULT) \ __XMP_RoundDownToPowerOf2(XMP_SOUND_BUFFER_CHUNKS) ' buffer frames
+    __XMPPlayer.soundBufferTime = (__XMPPlayer.soundBufferFrames * __XMP_RoundDownToPowerOf2(XMP_SOUND_BUFFER_CHUNKS)) / _SNDRATE ' this is how much time we are really buffering
     __XMPPlayer.soundBufferSamples = __XMPPlayer.soundBufferFrames * XMP_SOUND_BUFFER_CHANNELS ' buffer samples
     __XMPPlayer.soundBufferBytes = __XMPPlayer.soundBufferSamples * XMP_SOUND_BUFFER_SAMPLE_SIZE ' buffer bytes
     REDIM __XMPSoundBuffer(0 TO __XMPPlayer.soundBufferSamples - 1) AS INTEGER

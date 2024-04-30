@@ -113,8 +113,8 @@ _DISPLAY ' only swap buffer when we want
 Volume = XMP_VOLUME_MAX ' set initial volume as 100%
 OsciType = 2 ' 1 = Wave plot, 2 = Frequency spectrum (FFT)
 BackGroundType = 2 ' 0 = None, 1 = Stars, 2 = Circle Waves
-FreqFact = 4 ' frequency spectrum X-axis scale (powers of two only [2-8])
-MagFact = 4 ' frequency spectrum Y-axis scale (magnitude [1.0-5.0])
+FreqFact = 8 ' frequency spectrum X-axis scale (powers of two only [2-8])
+MagFact = 1.5! ' frequency spectrum Y-axis scale (magnitude [1.0-5.0])
 VolBoost = 1 ' no change
 InitializeStars Stars()
 InitializeCircleWaves CircleWaves()
