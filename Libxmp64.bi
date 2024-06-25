@@ -41,7 +41,7 @@ CONST XMP_SOUND_BUFFER_FRAME_SIZE = XMP_SOUND_BUFFER_SAMPLE_SIZE * XMP_SOUND_BUF
 CONST XMP_SOUND_BUFFER_CHUNKS = 2 ' chunks per buffer (should be power of 2)
 CONST XMP_SOUND_BUFFER_TIME_DEFAULT! = 0.08! ' we will try to ensure we have this amount of time left in the QB64 sound pipe
 
-CONST XMP_I16_TO_F32_MULTIPLIER! = 0.000030517578125! ' this is used to avoid division whereever possible
+CONST XMP_I16_TO_F32_MULTIPLIER! = 1! / 32768! ' this is used to avoid division whereever possible
 
 ' Info type used with xmp_test_module()
 TYPE xmp_test_info
