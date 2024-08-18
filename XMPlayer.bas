@@ -409,7 +409,8 @@ SUB DrawVisualization
 
     ' As the oscillators width is probably <> frequency range, we need to scale the x-position, same is with the magnitude (y-position)
     ' We'll also do the whole drawing using one loop instead of two to get better performance
-    DIM barWidth AS LONG: barWidth = _SHR(FreqFact, 1): i = 0
+    DIM barWidth AS LONG: barWidth = _SHR(FreqFact, 1)
+    i = 0
     DO WHILE i < freqMax
         xp = 21 + (i * 600 - barWidth) \ freqMax ' 21 = x_start, 599 = oscillator_width
 
