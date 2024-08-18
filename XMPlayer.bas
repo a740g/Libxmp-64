@@ -90,11 +90,19 @@ END TYPE
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
+' EXTERNAL LIBRARIES
+'-----------------------------------------------------------------------------------------------------------------------
+DECLARE LIBRARY
+    FUNCTION __AudioAnalyzer_CLZ& ALIAS "__builtin_clz" (BYVAL x AS _UNSIGNED LONG)
+END DECLARE
+'-----------------------------------------------------------------------------------------------------------------------
+
+'-----------------------------------------------------------------------------------------------------------------------
 ' GLOBAL VARIABLES
 '-----------------------------------------------------------------------------------------------------------------------
 DIM SHARED Volume AS LONG, OsciType AS LONG, BackGroundType AS LONG
 DIM SHARED FreqFact AS LONG, MagFact AS SINGLE, VolBoost AS SINGLE
-REDIM SHARED AS SINGLE lFFT(0 TO 0), rFFT(0 TO 0)
+REDIM SHARED FFT(0, 0) AS SINGLE
 DIM SHARED Stars(1 TO STAR_COUNT) AS StarType
 DIM SHARED CircleWaves(1 TO CIRCLE_WAVE_COUNT) AS CircleWaveType
 '-----------------------------------------------------------------------------------------------------------------------
@@ -166,7 +174,7 @@ FUNCTION OnPlaySong%% (fileName AS STRING)
     END IF
 
     ' Setup the FFT arrays
-    REDIM AS SINGLE lFFT(0 TO __XMPPlayer.soundBufferFrames \ 2 - 1), rFFT(0 TO __XMPPlayer.soundBufferFrames \ 2 - 1)
+    REDIM FFT(0 TO 1, 0 TO __XMPPlayer.soundBufferFrames \ 2 - 1) AS SINGLE
 
     ' Set the app title to display the file name
     DIM tuneTitle AS STRING: tuneTitle = XMP_GetTuneName
@@ -282,7 +290,7 @@ SUB DrawVisualization
     SHARED __XMPSoundBuffer() AS INTEGER
 
     ' Do FFT and calculate power for both left and right channel
-    DIM power AS SINGLE: power = (DoAnalyzerFFT(__XMPSoundBuffer(), 0, 2, lFFT()) + DoAnalyzerFFT(__XMPSoundBuffer(), 1, 2, rFFT())) / 2
+    DIM power AS SINGLE: power = (DoAnalyzerFFT(__XMPSoundBuffer(), 0, 2, FFT()) + DoAnalyzerFFT(__XMPSoundBuffer(), 1, 2, FFT())) / 2
 
     CLS , Black ' first clear everything
 
@@ -406,13 +414,13 @@ SUB DrawVisualization
         xp = 21 + (i * 600 - barWidth) \ freqMax ' 21 = x_start, 599 = oscillator_width
 
         ' Draw the left one first
-        yp = MagFact * lFFT(i)
+        yp = MagFact * FFT(0, i)
         IF yp > 95 THEN yp = 143 - 95 ELSE yp = 143 - yp ' 143 = y_start, 95 = oscillator_height
         c = 71 + (143 - yp) * 2 ' we're cheating here a bit to set the color using (y_start - yp)
         LINE (xp, 143)-(xp + barWidth, yp), _RGBA32(c, 255 - c, 0, 255), BF
 
         ' Then the right one
-        yp = MagFact * rFFT(i)
+        yp = MagFact * FFT(1, i)
         IF yp > 95 THEN yp = 271 - 95 ELSE yp = 271 - yp ' 271 = y_start, 95 = oscillator_height
         c = 71 + (271 - yp) * 2 ' we're cheating here a bit to set the color using (y_start - yp)
         LINE (xp, 271)-(xp + barWidth, yp), _RGBA32(c, 255 - c, 0, 255), BF
@@ -814,12 +822,12 @@ END FUNCTION
 ' This has been modified only for the purpose of calculating FFT data for audio analyzers. As such, it has multiple optimizations and shortcuts
 ' This will only calculate FFT data for positive frequencies. Therefore, fft_out can have exactly half indexes of real_in
 ' All arrays passed must be zero based and must be a power of 2 size (... 512, 1024, 2048, 4096 ...)
-' real_in - 16-bit mono / stereo audio sample array
-' begin - the index in real_in where we should begin (if real_in is stereo, use 0 for left and 1 for right)
-' inc - the number of indexes we should skip (1 if real_in is mono, 2 if real_in is stereo)
-' fft_out - the output fft array (for positive frequencies only)
+' real_in - 32-bit mono / stereo / multi-channel floating-point audio sample array
+' begin - [channel] the index in real_in where we should begin (if real_in is stereo, use 0 for left channel, 1 for right channel... etc.)
+' inc - [channels] the number of samples we should skip (1 if real_in is mono, 2 if real_in is stereo... etc.)
+' fft_out(channel, data) - the output fft array (for positive frequencies only)
 ' Returns the audio power level
-FUNCTION DoAnalyzerFFT! (real_in() AS INTEGER, begin AS LONG, inc AS LONG, fft_out() AS SINGLE)
+FUNCTION DoAnalyzerFFT! (real_in() AS INTEGER, begin AS LONG, inc AS LONG, fft_out( ,) AS SINGLE)
     $CHECKING:OFF
     STATIC AS SINGLE fft_real(0 TO 0), fft_imag(0 TO 0)
     STATIC rev_lookup(0 TO 0) AS LONG
@@ -836,7 +844,7 @@ FUNCTION DoAnalyzerFFT! (real_in() AS INTEGER, begin AS LONG, inc AS LONG, fft_o
 
         REDIM rev_lookup(0 TO half_n - 1) AS LONG
 
-        log2n = LOG(half_n) / LOG(2)
+        log2n = 30~& - __AudioAnalyzer_CLZ(n) ' log(half_n) / log(2)
 
         i = 0
         DO WHILE i < half_n
@@ -868,8 +876,8 @@ FUNCTION DoAnalyzerFFT! (real_in() AS INTEGER, begin AS LONG, inc AS LONG, fft_o
 
         j = 0
         DO WHILE j < half_n
-            wr = 1
-            wi = 0
+            wr = 1!
+            wi = 0!
 
             k = 0
             DO WHILE k < half_m
@@ -920,7 +928,7 @@ FUNCTION DoAnalyzerFFT! (real_in() AS INTEGER, begin AS LONG, inc AS LONG, fft_o
         fft_real(i) = xpr + xpi * wmr - xmr * wmi
         fft_imag(i) = xmi - xpi * wmi - xmr * wmr
 
-        fft_out(i) = SQR(fft_real(i) * fft_real(i) + fft_imag(i) * fft_imag(i))
+        fft_out(begin, i) = SQR(fft_real(i) * fft_real(i) + fft_imag(i) * fft_imag(i))
         i = i + 1
     LOOP
     $CHECKING:ON
