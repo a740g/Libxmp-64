@@ -50,7 +50,7 @@ CONST EVENT_DROP%% = 4%% ' user dropped files
 CONST EVENT_PLAY%% = 5%% ' play next song
 CONST EVENT_HTTP%% = 6%% ' user wants to downloads and play random tunes from modarchive.org
 ' Background constants
-CONST STAR_COUNT& = 512& ' the maximum stars that we can show
+CONST STAR_COUNT& = 1024& ' the maximum stars that we can show
 CONST CIRCLE_WAVE_COUNT& = 32&
 '-----------------------------------------------------------------------------------------------------------------------
 
@@ -76,6 +76,7 @@ END TYPE
 
 TYPE StarType
     p AS Vector3Type ' position
+    a AS SINGLE ' angle
     c AS _UNSIGNED LONG ' color
 END TYPE
 
@@ -121,8 +122,8 @@ _DISPLAY ' only swap buffer when we want
 Volume = XMP_VOLUME_MAX ' set initial volume as 100%
 OsciType = 2 ' 1 = Wave plot, 2 = Frequency spectrum (FFT)
 BackGroundType = 2 ' 0 = None, 1 = Stars, 2 = Circle Waves
-FreqFact = 8 ' frequency spectrum X-axis scale (powers of two only [2-8])
-MagFact = 1.5! ' frequency spectrum Y-axis scale (magnitude [1.0-5.0])
+FreqFact = 8 ' frequency spectrum X-axis scale (powers of two only [4-16])
+MagFact = 3! ' frequency spectrum Y-axis scale (magnitude [1.0-5.0])
 VolBoost = 1 ' no change
 InitializeStars Stars()
 InitializeCircleWaves CircleWaves()
@@ -235,10 +236,10 @@ FUNCTION OnPlaySong%% (fileName AS STRING)
                 BackGroundType = (BackGroundType + 1) MOD 3
 
             CASE 70 ' F - zoom in (smaller freq range)
-                IF FreqFact < 8 THEN FreqFact = FreqFact * 2
+                IF FreqFact < 16 THEN FreqFact = FreqFact * 2
 
             CASE 102 ' f - zoom out (bigger freq range)
-                IF FreqFact > 2 THEN FreqFact = FreqFact \ 2
+                IF FreqFact > 4 THEN FreqFact = FreqFact \ 2
 
             CASE 77 ' M - scale up (bring out peaks)
                 IF MagFact < 5.0! THEN MagFact = MagFact + 0.25!
@@ -289,18 +290,18 @@ SUB DrawVisualization
     SHARED __XMPPlayer AS __XMPPlayerType ' we are using this only to access the library internals to draw the analyzer
     SHARED __XMPSoundBuffer() AS INTEGER
 
-    ' Do FFT and calculate power for both left and right channel
-    DIM power AS SINGLE: power = (DoAnalyzerFFT(__XMPSoundBuffer(), 0, 2, FFT()) + DoAnalyzerFFT(__XMPSoundBuffer(), 1, 2, FFT())) / 2
+    ' Do FFT and calculate intensity for both left and right channel
+    DIM intensity AS SINGLE: intensity = (AudioAnalyzer_FFT(__XMPSoundBuffer(), 0, 2, FFT()) + AudioAnalyzer_FFT(__XMPSoundBuffer(), 1, 2, FFT())) / 2!
 
     CLS , Black ' first clear everything
 
     ' Draw the background
     SELECT CASE BackGroundType
         CASE 1
-            ' Larger values of power will have more impact on speed and we'll not let this go to zero else LOG will puke
-            UpdateAndDrawStars Stars(), -8.0! * LOG(1.0000001192093! - power)
+            ' Larger values of intensity will have more impact on speed and we'll not let this go to zero else LOG will puke
+            UpdateAndDrawStars Stars(), -8.0! * LOG(1.0000001192093! - intensity)
         CASE 2
-            UpdateAndDrawCircleWaves CircleWaves(), 8.0! * power
+            UpdateAndDrawCircleWaves CircleWaves(), 8.0! * intensity
     END SELECT
 
     IF XMP_IsPaused OR NOT XMP_IsPlaying THEN COLOR OrangeRed ELSE COLOR White
@@ -819,25 +820,22 @@ FUNCTION GetRandomValue& (lo AS LONG, hi AS LONG)
 END FUNCTION
 
 
-' This is a heavily modified version of Vince's FFT routine from https://qb64phoenix.com/forum/showthread.php?tid=270&pid=2005#pid2005
-' This has been modified only for the purpose of calculating FFT data for audio analyzers. As such, it has multiple optimizations and shortcuts
-' This will only calculate FFT data for positive frequencies. Therefore, fft_out can have exactly half indexes of real_in
-' All arrays passed must be zero based and must be a power of 2 size (... 512, 1024, 2048, 4096 ...)
-' real_in - 32-bit mono / stereo / multi-channel floating-point audio sample array
-' begin - [channel] the index in real_in where we should begin (if real_in is stereo, use 0 for left channel, 1 for right channel... etc.)
-' inc - [channels] the number of samples we should skip (1 if real_in is mono, 2 if real_in is stereo... etc.)
-' fft_out(channel, data) - the output fft array (for positive frequencies only)
-' Returns the audio power level
-FUNCTION DoAnalyzerFFT! (real_in() AS INTEGER, begin AS LONG, inc AS LONG, fft_out( ,) AS SINGLE)
+' @brief This function calculates the FFT for use in audio analyzers. All arrays passed must be zero based and power of 2 size.
+' @param realInput 16-bit multi-channel interleaved audio sample array.
+' @param channel The index in realInput where we should begin (0 for the first channel, 1 for the second, etc.).
+' @param channels The number of samples we should skip in realInput (1 for mono data, 2 for stereo, etc.).
+' fftOutput The output FFT array for positive frequencies only. First dimension is channel, and second is the FFT data.
+' @return Audio intensity for the given channel.
+FUNCTION AudioAnalyzer_FFT! (realInput() AS INTEGER, channel AS LONG, channels AS LONG, fftOutput( ,) AS SINGLE)
     $CHECKING:OFF
     STATIC AS SINGLE fft_real(0 TO 0), fft_imag(0 TO 0)
     STATIC rev_lookup(0 TO 0) AS LONG
     STATIC AS LONG half_n, log2n
 
-    DIM AS SINGLE wr, wi, wmr, wmi, ur, ui, vr, vi, xpr, xpi, xmr, xmi, pi_m, power
+    DIM AS SINGLE wr, wi, wmr, wmi, ur, ui, vr, vi, pi_m, intensity
     DIM AS LONG rev, i, j, k, m, p, q, n, half_m
 
-    n = (UBOUND(real_in) + 1) \ inc
+    n = (UBOUND(realInput) + 1) \ channels
     IF n <> UBOUND(fft_real) + 1 THEN
         REDIM AS SINGLE fft_real(0 TO n - 1), fft_imag(0 TO n - 1)
 
@@ -845,7 +843,7 @@ FUNCTION DoAnalyzerFFT! (real_in() AS INTEGER, begin AS LONG, inc AS LONG, fft_o
 
         REDIM rev_lookup(0 TO half_n - 1) AS LONG
 
-        log2n = 30~& - __AudioAnalyzer_CLZ(n) ' log(half_n) / log(2)
+        log2n = 30~& - __AudioAnalyzer_CLZ(n)
 
         i = 0
         DO WHILE i < half_n
@@ -861,12 +859,12 @@ FUNCTION DoAnalyzerFFT! (real_in() AS INTEGER, begin AS LONG, inc AS LONG, fft_o
     i = 0
     DO WHILE i < half_n
         rev = rev_lookup(i)
-        fft_real(i) = real_in(begin + 2 * rev * inc) * XMP_I16_TO_F32_MULTIPLIER
-        fft_imag(i) = real_in(begin + (2 * rev + 1) * inc) * XMP_I16_TO_F32_MULTIPLIER
-        power = power + fft_real(i) * fft_real(i) + fft_imag(i) * fft_imag(i)
+        fft_real(i) = realInput(channel + rev * channels) * XMP_I16_TO_F32_MULTIPLIER!
+        fft_imag(i) = 0!
+        intensity = intensity + fft_real(i) * fft_real(i)
         i = i + 1
     LOOP
-    DoAnalyzerFFT = power / n
+    AudioAnalyzer_FFT = intensity / half_n
 
     FOR i = 1 TO log2n
         m = _SHL(1, i)
@@ -903,33 +901,11 @@ FUNCTION DoAnalyzerFFT! (real_in() AS INTEGER, begin AS LONG, inc AS LONG, fft_o
             LOOP
             j = j + m
         LOOP
-    NEXT
-
-    fft_real(half_n) = fft_real(0)
-    fft_imag(half_n) = fft_imag(0)
-
-    i = 1
-    DO WHILE i < half_n
-        fft_real(half_n + i) = fft_real(half_n - i)
-        fft_imag(half_n + i) = fft_imag(half_n - i)
-        i = i + 1
-    LOOP
+    NEXT i
 
     i = 0
     DO WHILE i < half_n
-        xpr = (fft_real(i) + fft_real(half_n + i)) * 0.5!
-        xpi = (fft_imag(i) + fft_imag(half_n + i)) * 0.5!
-        xmr = (fft_real(i) - fft_real(half_n + i)) * 0.5!
-        xmi = (fft_imag(i) - fft_imag(half_n + i)) * 0.5!
-
-        pi_m = _PI(2! * i / n)
-        wmr = COS(pi_m)
-        wmi = SIN(pi_m)
-
-        fft_real(i) = xpr + xpi * wmr - xmr * wmi
-        fft_imag(i) = xmi - xpi * wmi - xmr * wmr
-
-        fft_out(begin, i) = SQR(fft_real(i) * fft_real(i) + fft_imag(i) * fft_imag(i))
+        fftOutput(channel, i) = SQR(fft_real(i) * fft_real(i) + fft_imag(i) * fft_imag(i))
         i = i + 1
     LOOP
     $CHECKING:ON
@@ -991,24 +967,30 @@ END SUB
 
 
 SUB UpdateAndDrawStars (stars() AS StarType, speed AS SINGLE)
+    CONST Z_DIVIDER = 4096!
+
     DIM L AS LONG: L = LBOUND(stars)
     DIM U AS LONG: U = UBOUND(stars)
     DIM W AS LONG: W = _WIDTH
     DIM H AS LONG: H = _HEIGHT
+    DIM W_Half AS LONG: W_Half = W \ 2
+    DIM H_Half AS LONG: H_Half = H \ 2
 
     DIM i AS LONG: FOR i = L TO U
         IF stars(i).p.x < 0 OR stars(i).p.x >= W OR stars(i).p.y < 0 OR stars(i).p.y >= H THEN
             stars(i).p.x = GetRandomValue(0, W - 1)
             stars(i).p.y = GetRandomValue(0, H - 1)
-            stars(i).p.z = 4096!
+            stars(i).p.z = Z_DIVIDER
             stars(i).c = _RGBA32(GetRandomValue(64, 255), GetRandomValue(64, 255), GetRandomValue(64, 255), 255)
         END IF
 
         PSET (stars(i).p.x, stars(i).p.y), stars(i).c
 
         stars(i).p.z = stars(i).p.z + speed
-        stars(i).p.x = ((stars(i).p.x - _SHR(W, 1)) * (stars(i).p.z / 4096!)) + _SHR(W, 1)
-        stars(i).p.y = ((stars(i).p.y - _SHR(H, 1)) * (stars(i).p.z / 4096!)) + _SHR(H, 1)
+        stars(i).a = stars(i).a + 0.01!
+        DIM zd AS SINGLE: zd = stars(i).p.z / Z_DIVIDER
+        stars(i).p.x = ((stars(i).p.x - W_Half) * zd) + W_Half + COS(stars(i).a * 0.5!)
+        stars(i).p.y = ((stars(i).p.y - H_Half) * zd) + H_Half + SIN(stars(i).a * 1.5!)
     NEXT
 END SUB
 
