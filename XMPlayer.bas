@@ -410,7 +410,7 @@ SUB DrawVisualization
 
     ' As the oscillators width is probably <> frequency range, we need to scale the x-position, same is with the magnitude (y-position)
     ' We'll also do the whole drawing using one loop instead of two to get better performance
-    DIM barWidth AS LONG: barWidth = _SHR(FreqFact, 1)
+    DIM barWidth AS LONG: barWidth = FreqFact \ 2
     i = 0
     DO WHILE i < freqMax
         xp = 21 + (i * 600 - barWidth) \ freqMax ' 21 = x_start, 599 = oscillator_width
@@ -821,10 +821,11 @@ END FUNCTION
 
 
 ' @brief This function calculates the FFT for use in audio analyzers. All arrays passed must be zero based and power of 2 size.
+' This was simplified and adapted from Vince's FFT code at https://qb64phoenix.com/forum/showthread.php?tid=270&pid=2005#pid2005
 ' @param realInput 16-bit multi-channel interleaved audio sample array.
 ' @param channel The index in realInput where we should begin (0 for the first channel, 1 for the second, etc.).
 ' @param channels The number of samples we should skip in realInput (1 for mono data, 2 for stereo, etc.).
-' fftOutput The output FFT array for positive frequencies only. First dimension is channel, and second is the FFT data.
+' @param fftOutput [out] The output FFT array for positive frequencies only. First dimension is channel, and second is the FFT data.
 ' @return Audio intensity for the given channel.
 FUNCTION AudioAnalyzer_FFT! (realInput() AS INTEGER, channel AS LONG, channels AS LONG, fftOutput( ,) AS SINGLE)
     $CHECKING:OFF
@@ -839,7 +840,7 @@ FUNCTION AudioAnalyzer_FFT! (realInput() AS INTEGER, channel AS LONG, channels A
     IF n <> UBOUND(fft_real) + 1 THEN
         REDIM AS SINGLE fft_real(0 TO n - 1), fft_imag(0 TO n - 1)
 
-        half_n = _SHR(n, 1)
+        half_n = n \ 2
 
         REDIM rev_lookup(0 TO half_n - 1) AS LONG
 
@@ -868,7 +869,7 @@ FUNCTION AudioAnalyzer_FFT! (realInput() AS INTEGER, channel AS LONG, channels A
 
     FOR i = 1 TO log2n
         m = _SHL(1, i)
-        half_m = _SHR(m, 1)
+        half_m = m \ 2
         pi_m = _PI(-2! / m)
         wmr = COS(pi_m)
         wmi = SIN(pi_m)
@@ -906,47 +907,46 @@ FUNCTION AudioAnalyzer_FFT! (realInput() AS INTEGER, channel AS LONG, channels A
     i = 0
     DO WHILE i < half_n
         fftOutput(channel, i) = SQR(fft_real(i) * fft_real(i) + fft_imag(i) * fft_imag(i))
+
         i = i + 1
     LOOP
     $CHECKING:ON
 END FUNCTION
 
 
-' Draws a filled circle using _DEFAULTCOLOR
-' cx, cy - circle center x, y
-' R - circle radius
-SUB CircleFill (cx AS LONG, cy AS LONG, r AS LONG, c AS _UNSIGNED LONG)
+SUB DrawFilledCircle (cx AS LONG, cy AS LONG, r AS LONG, c AS _UNSIGNED LONG)
     $CHECKING:OFF
-    DIM AS LONG radius, radiusError, X, Y
 
-    radius = ABS(r)
-    radiusError = -radius
-    X = radius ' Y = 0
-
-    IF radius = 0 THEN
+    IF r <= 0 THEN
         PSET (cx, cy), c
         EXIT SUB
     END IF
 
-    LINE (cx - X, cy)-(cx + X, cy), c, BF
+    DIM e AS LONG: e = -r
+    DIM x AS LONG: x = r
+    DIM y AS LONG
 
-    DO WHILE X > Y
-        radiusError = radiusError + _SHL(Y, 1) + 1
+    LINE (cx - x, cy)-(cx + x, cy), c, BF
 
-        IF radiusError >= 0 THEN
-            IF X <> Y + 1 THEN
-                LINE (cx - Y, cy - X)-(cx + Y, cy - X), c, BF
-                LINE (cx - Y, cy + X)-(cx + Y, cy + X), c, BF
+    DO WHILE x > y
+        e = e + y * 2 + 1
+
+        IF e >= 0 THEN
+            IF x <> y + 1 THEN
+                LINE (cx - y, cy - x)-(cx + y, cy - x), c, BF
+                LINE (cx - y, cy + x)-(cx + y, cy + x), c, BF
             END IF
-            X = X - 1
-            radiusError = radiusError - _SHL(X, 1)
+
+            x = x - 1
+            e = e - x * 2
         END IF
 
-        Y = Y + 1
+        y = y + 1
 
-        LINE (cx - X, cy - Y)-(cx + X, cy - Y), c, BF
-        LINE (cx - X, cy + Y)-(cx + X, cy + Y), c, BF
+        LINE (cx - x, cy - y)-(cx + x, cy - y), c, BF
+        LINE (cx - x, cy + y)-(cx + x, cy + y), c, BF
     LOOP
+
     $CHECKING:ON
 END SUB
 
@@ -1043,7 +1043,7 @@ SUB UpdateAndDrawCircleWaves (circleWaves() AS CircleWaveType, size AS SINGLE)
             circleWaves(i).c.b = GetRandomValue(0, 128)
         END IF
 
-        CircleFill circleWaves(i).p.x, circleWaves(i).p.y, circleWaves(i).r + circleWaves(i).r * size, _RGBA32(circleWaves(i).c.r, circleWaves(i).c.g, circleWaves(i).c.b, 255! * circleWaves(i).a)
+        DrawFilledCircle circleWaves(i).p.x, circleWaves(i).p.y, circleWaves(i).r + circleWaves(i).r * size, _RGBA32(circleWaves(i).c.r, circleWaves(i).c.g, circleWaves(i).c.b, 255! * circleWaves(i).a)
     NEXT
 END SUB
 '-----------------------------------------------------------------------------------------------------------------------
