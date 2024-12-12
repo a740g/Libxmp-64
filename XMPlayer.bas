@@ -6,14 +6,8 @@
 '-----------------------------------------------------------------------------------------------------------------------
 ' METACOMMANDS
 '-----------------------------------------------------------------------------------------------------------------------
-DEFLNG A-Z
+_DEFINE A-Z AS LONG
 OPTION _EXPLICIT
-'$STATIC
-OPTION BASE 1
-$RESIZE:SMOOTH
-$UNSTABLE:HTTP
-$COLOR:32
-$EXEICON:'./XMPlayer.ico'
 $VERSIONINFO:CompanyName='Samuel Gomes'
 $VERSIONINFO:FileDescription='XMPlayer executable'
 $VERSIONINFO:InternalName='XMPlayer'
@@ -23,21 +17,24 @@ $VERSIONINFO:OriginalFilename='XMPlayer.exe'
 $VERSIONINFO:ProductName='XMPlayer'
 $VERSIONINFO:Web='https://github.com/a740g'
 $VERSIONINFO:Comments='https://github.com/a740g'
-$VERSIONINFO:FILEVERSION#=4,2,0,0
-$VERSIONINFO:PRODUCTVERSION#=4,2,0,0
+$VERSIONINFO:FILEVERSION#=4,2,1,0
+$VERSIONINFO:PRODUCTVERSION#=4,2,1,0
+$EXEICON:'./XMPlayer.ico'
+$RESIZE:SMOOTH
+'$STATIC
+OPTION BASE 1
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
 ' HEADER FILES
 '-----------------------------------------------------------------------------------------------------------------------
+$COLOR:32
 '$INCLUDE:'Libxmp64.bi'
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
 ' CONSTANTS
 '-----------------------------------------------------------------------------------------------------------------------
-' Common constants
-CONST FALSE%% = 0%%, TRUE%% = NOT FALSE
 ' Some important constants
 CONST APP_NAME = "XMPlayer"
 CONST FRAME_RATE_MAX& = 60&
@@ -88,14 +85,6 @@ TYPE CircleWaveType
     a AS SINGLE ' alpha
     s AS SINGLE ' fade speed
 END TYPE
-'-----------------------------------------------------------------------------------------------------------------------
-
-'-----------------------------------------------------------------------------------------------------------------------
-' EXTERNAL LIBRARIES
-'-----------------------------------------------------------------------------------------------------------------------
-DECLARE LIBRARY
-    FUNCTION __AudioAnalyzer_CLZ& ALIAS "__builtin_clz" (BYVAL x AS _UNSIGNED LONG)
-END DECLARE
 '-----------------------------------------------------------------------------------------------------------------------
 
 '-----------------------------------------------------------------------------------------------------------------------
@@ -179,7 +168,7 @@ FUNCTION OnPlaySong%% (fileName AS STRING)
 
     ' Set the app title to display the file name
     DIM tuneTitle AS STRING: tuneTitle = XMP_GetTuneName
-    IF tuneTitle = "" THEN
+    IF tuneTitle = _STR_EMPTY THEN
         IF LEN(GetDriveOrSchemeFromPathOrURL(fileName)) > 2 THEN
             tuneTitle = GetLegalFileNameFromURL(fileName)
         ELSE
@@ -203,10 +192,10 @@ FUNCTION OnPlaySong%% (fileName AS STRING)
         k = _KEYHIT
 
         SELECT CASE k
-            CASE 27
+            CASE _KEY_ESC
                 EXIT DO
 
-            CASE 32 ' SPC - toggle pause
+            CASE _ASC_SPACE ' SPC - toggle pause
                 XMP_Pause NOT XMP_IsPaused
 
             CASE 43, 61 ' + = volume up
@@ -223,10 +212,10 @@ FUNCTION OnPlaySong%% (fileName AS STRING)
             CASE 82, 114 ' R -  rewind
                 XMP_Replay
 
-            CASE 19200 ' <- - rewind one position
+            CASE _KEY_LEFT ' <- - rewind one position
                 XMP_GoToPreviousPosition
 
-            CASE 19712 ' -> - fast forward on position
+            CASE _KEY_RIGHT ' -> - fast forward on position
                 XMP_GoToNextPosition
 
             CASE 79, 111 ' O - toggle oscillator
@@ -253,11 +242,11 @@ FUNCTION OnPlaySong%% (fileName AS STRING)
             CASE 118 ' v - volume down (quieter)
                 IF VolBoost > 1.0! THEN VolBoost = VolBoost - 0.05!
 
-            CASE 15104 ' F1
+            CASE _KEY_F1 ' F1
                 OnPlaySong = EVENT_LOAD
                 EXIT DO
 
-            CASE 16384 ' F6: quick save file loaded from ModArchive
+            CASE _KEY_F6 ' F6: quick save file loaded from ModArchive
                 QuickSave buffer, fileName
 
             CASE 21248 ' Shift + Delete - you known what it does
@@ -304,7 +293,7 @@ SUB DrawVisualization
             UpdateAndDrawCircleWaves CircleWaves(), 8.0! * intensity
     END SELECT
 
-    IF XMP_IsPaused OR NOT XMP_IsPlaying THEN COLOR OrangeRed ELSE COLOR White
+    IF XMP_IsPaused _ORELSE NOT XMP_IsPlaying THEN COLOR OrangeRed ELSE COLOR White
 
     ' Draw the tune info
     DIM AS STRING * 2 minute, second
@@ -488,13 +477,13 @@ FUNCTION OnWelcomeScreen%%
 
         k = _KEYHIT
 
-        IF k = 27 THEN ' ESC
+        IF k = _KEY_ESC THEN ' ESC
             e = EVENT_QUIT
         ELSEIF _TOTALDROPPEDFILES > 0 THEN
             e = EVENT_DROP
-        ELSEIF k = 15104 THEN ' F1
+        ELSEIF k = _KEY_F1 THEN ' F1
             e = EVENT_LOAD
-        ELSEIF k = 15360 THEN ' F2
+        ELSEIF k = _KEY_F2 THEN ' F2
             e = EVENT_HTTP
         END IF
 
@@ -511,12 +500,12 @@ END FUNCTION
 FUNCTION OnCommandLine%%
     DIM e AS _BYTE: e = EVENT_NONE
 
-    IF (COMMAND$(1) = "/?" OR COMMAND$(1) = "-?") THEN
-        _MESSAGEBOX APP_NAME, APP_NAME + CHR$(13) _
-            + "Syntax: " + APP_NAME + " [filespec]" + CHR$(13) _
-            + "    /?: Shows this message" + STRING$(2, 13) _
-            + "Note: Wildcards are supported" + STRING$(2, 13) _
-            + "Copyright (c) 2024, Samuel Gomes" + STRING$(2, 13) _
+    IF (COMMAND$(1) = "/?" _ORELSE COMMAND$(1) = "-?") THEN
+        _MESSAGEBOX APP_NAME, APP_NAME + CHR$(_ASC_CR) _
+            + "Syntax: " + APP_NAME + " [filespec]" + CHR$(_ASC_CR) _
+            + "    /?: Shows this message" + STRING$(2, _ASC_CR) _
+            + "Note: Wildcards are supported" + STRING$(2, _ASC_CR) _
+            + "Copyright (c) 2024, Samuel Gomes" + STRING$(2, _ASC_CR) _
             + "https://github.com/a740g/", "info"
 
         e = EVENT_QUIT
@@ -558,9 +547,9 @@ FUNCTION OnSelectedFiles%%
     DIM ofdList AS STRING
     DIM e AS _BYTE: e = EVENT_NONE
 
-    ofdList = _OPENFILEDIALOG$(APP_NAME, , , "All files", TRUE)
+    ofdList = _OPENFILEDIALOG$(APP_NAME, , , "All files", _TRUE)
 
-    IF ofdList = "" THEN EXIT FUNCTION
+    IF ofdList = _STR_EMPTY THEN EXIT FUNCTION
 
     REDIM fileNames(0 TO 0) AS STRING
 
@@ -588,7 +577,7 @@ FUNCTION OnModArchiveFiles%%
         _TITLE "Downloading: " + GetLegalFileNameFromURL(modArchiveFileName) + " - " + APP_NAME
 
         e = OnPlaySong(modArchiveFileName)
-    LOOP WHILE e = EVENT_NONE OR e = EVENT_PLAY
+    LOOP WHILE e = EVENT_NONE _ORELSE e = EVENT_PLAY
 
     OnModArchiveFiles = e
 END FUNCTION
@@ -611,9 +600,9 @@ SUB QuickSave (buffer AS STRING, fileName AS STRING)
 
     IF LEN(GetDriveOrSchemeFromPathOrURL(fileName)) > 2 THEN
         ' This is a file from the web
-        IF NOT _DIREXISTS(savePath) OR NOT alwaysUseSamePath THEN ' only get the path if path does not exist or user wants to use a new path
+        IF NOT _DIREXISTS(savePath) _ORELSE NOT alwaysUseSamePath THEN ' only get the path if path does not exist or user wants to use a new path
             savePath = _SELECTFOLDERDIALOG$("Select a folder to save the file:", savePath)
-            IF savePath = "" THEN EXIT SUB ' exit if user cancelled
+            IF savePath = _STR_EMPTY THEN EXIT SUB ' exit if user cancelled
 
             savePath = FixPathDirectoryName(savePath)
         END IF
@@ -624,18 +613,18 @@ SUB QuickSave (buffer AS STRING, fileName AS STRING)
             IF _MESSAGEBOX(APP_NAME, "Overwrite " + saveFileName + "?", "yesno", "warning", 0) = 0 THEN EXIT SUB
         END IF
 
-        SaveFile buffer, saveFileName
+        _WRITEFILE saveFileName, buffer
         _MESSAGEBOX APP_NAME, saveFileName + " saved.", "info"
 
         ' Check if user want to use the same path in the future
         IF NOT stopNagging THEN
             SELECT CASE _MESSAGEBOX(APP_NAME, "Do you want to use " + savePath + " for future saves?", "yesnocancel", "question", 1)
                 CASE 0
-                    stopNagging = TRUE
+                    stopNagging = _TRUE
                 CASE 1
-                    alwaysUseSamePath = TRUE
+                    alwaysUseSamePath = _TRUE
                 CASE 2
-                    alwaysUseSamePath = FALSE
+                    alwaysUseSamePath = _FALSE
             END SELECT
         END IF
     ELSE
@@ -675,19 +664,10 @@ FUNCTION GetLegalFileNameFromURL$ (url AS STRING)
 END FUNCTION
 
 
-' Save a buffer to a file
-SUB SaveFile (buffer AS STRING, fileName AS STRING)
-    DIM fh AS LONG: fh = FREEFILE
-    OPEN fileName FOR OUTPUT AS fh ' open file in text mode to wipe out the file if it exists
-    PRINT #fh, buffer; ' write the buffer to the file (works regardless of the file being opened in text mode)
-    CLOSE fh
-END SUB
-
-
 ' Adds a trailing / to a directory name if needed
 ' TODO: This needs to be more platform specific (i.e. \ should not be checked on non-windows platforms)
 FUNCTION FixPathDirectoryName$ (PathOrURL AS STRING)
-    IF LEN(PathOrURL) > 0 AND (ASC(PathOrURL, LEN(PathOrURL)) <> 47 OR ASC(PathOrURL, LEN(PathOrURL)) <> 92) THEN
+    IF LEN(PathOrURL) > 0 _ANDALSO (ASC(PathOrURL, LEN(PathOrURL)) <> 47 _ORELSE ASC(PathOrURL, LEN(PathOrURL)) <> 92) THEN
         FixPathDirectoryName = PathOrURL + "/"
     ELSE
         FixPathDirectoryName = PathOrURL
@@ -701,7 +681,7 @@ FUNCTION GetFileNameFromPathOrURL$ (pathName AS STRING)
 
     ' Retrieve the position of the first / or \ in the parameter from the
     DIM i AS LONG: FOR i = j TO 1 STEP -1
-        IF ASC(pathName, i) = 47 OR ASC(pathName, i) = 92 THEN EXIT FOR
+        IF ASC(pathName, i) = 47 _ORELSE ASC(pathName, i) = 92 THEN EXIT FOR
     NEXT
 
     ' Return the full string if pathsep was not found
@@ -755,22 +735,8 @@ END FUNCTION
 FUNCTION LoadFile$ (PathOrURL AS STRING)
     IF LEN(GetDriveOrSchemeFromPathOrURL(PathOrURL)) > 2 THEN
         LoadFile = LoadFileFromURL(PathOrURL)
-    ELSE
-        LoadFile = LoadFileFromDisk(PathOrURL)
-    END IF
-END FUNCTION
-
-
-' Loads a whole file from disk into memory
-FUNCTION LoadFileFromDisk$ (path AS STRING)
-    IF _FILEEXISTS(path) THEN
-        DIM AS LONG fh: fh = FREEFILE
-
-        OPEN path FOR BINARY ACCESS READ AS fh
-
-        LoadFileFromDisk = INPUT$(LOF(fh), fh)
-
-        CLOSE fh
+    ELSEIF _FILEEXISTS(PathOrURL) THEN
+        LoadFile = _READFILE$(PathOrURL)
     END IF
 END FUNCTION
 
@@ -800,13 +766,13 @@ FUNCTION BoolToStr$ (expression AS LONG, style AS _UNSIGNED _BYTE)
     $CHECKING:OFF
     SELECT CASE style
         CASE 1
-            IF expression THEN BoolToStr = "On" ELSE BoolToStr = "Off"
+            BoolToStr = _IIF(expression, "On", "Off")
         CASE 2
-            IF expression THEN BoolToStr = "Enabled" ELSE BoolToStr = "Disabled"
+            BoolToStr = _IIF(expression, "Enabled", "Disabled")
         CASE 3
-            IF expression THEN BoolToStr = "1" ELSE BoolToStr = "0"
+            BoolToStr = _IIF(expression, "1", "0")
         CASE ELSE
-            IF expression THEN BoolToStr = "True" ELSE BoolToStr = "False"
+            BoolToStr = _IIF(expression, "True", "False")
     END SELECT
     $CHECKING:ON
 END FUNCTION
@@ -828,6 +794,10 @@ END FUNCTION
 ' @param fftOutput [out] The output FFT array for positive frequencies only. First dimension is channel, and second is the FFT data.
 ' @return Audio intensity for the given channel.
 FUNCTION AudioAnalyzer_FFT! (realInput() AS INTEGER, channel AS LONG, channels AS LONG, fftOutput( ,) AS SINGLE)
+    DECLARE LIBRARY
+        FUNCTION __AudioAnalyzer_CLZ& ALIAS "__builtin_clz" (BYVAL x AS _UNSIGNED LONG)
+    END DECLARE
+
     $CHECKING:OFF
     STATIC AS SINGLE fft_real(0 TO 0), fft_imag(0 TO 0)
     STATIC rev_lookup(0 TO 0) AS LONG
@@ -977,7 +947,7 @@ SUB UpdateAndDrawStars (stars() AS StarType, speed AS SINGLE)
     DIM H_Half AS LONG: H_Half = H \ 2
 
     DIM i AS LONG: FOR i = L TO U
-        IF stars(i).p.x < 0 OR stars(i).p.x >= W OR stars(i).p.y < 0 OR stars(i).p.y >= H THEN
+        IF stars(i).p.x < 0 _ORELSE stars(i).p.x >= W _ORELSE stars(i).p.y < 0 _ORELSE stars(i).p.y >= H THEN
             stars(i).p.x = GetRandomValue(0, W - 1)
             stars(i).p.y = GetRandomValue(0, H - 1)
             stars(i).p.z = Z_DIVIDER

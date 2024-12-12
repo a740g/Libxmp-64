@@ -12,7 +12,7 @@ $INCLUDEONCE
 '   1. The TYPES below are aligned for x86-64 arch. Padded with extra bytes wherever needed
 '   2. 32-bit machines and OSes are not mainstream anymore
 '   3. I clearly lack the motivation for adding 32-bit support. If anyone wants to do it, then please open a PR!
-$IF VERSION < 3.12.0 OR 32BIT THEN
+$IF VERSION < 4.0.0 OR 32BIT THEN
     $ERROR 'This requires the latest 64-bit version of QB64-PE from https://github.com/QB64-Phoenix-Edition/QB64pe/releases/latest'
 $END IF
 
@@ -140,4 +140,4 @@ $IF WINDOWS THEN
 END DECLARE
 
 DIM __XMPPlayer AS __XMPPlayerType ' this is used to track the library state as such
-REDIM __XMPSoundBuffer(0 TO 0) AS INTEGER ' this is the buffer that holds the rendered samples from libxmp
+REDIM __XMPSoundBuffer(0) AS INTEGER ' this is the buffer that holds the rendered samples from libxmp
